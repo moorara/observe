@@ -13,8 +13,9 @@ You can use the **global/singelton** logger as follows:
 package main
 
 import (
-	"errors"
-	"github.com/moorara/observe/log"
+  "errors"
+
+  "github.com/moorara/observe/log"
 )
 
 func main() {
