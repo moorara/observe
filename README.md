@@ -22,7 +22,7 @@ Logs are also hard to track across different and distributed processes.
 This package can be used for implementing **metrics** in Go applications.
 It supports [OpenMetrics](https://openmetrics.io) format and uses [Prometheus](https://prometheus.io) API.
 
-Metrics are _time-series_ data with _low and fixed cardinality_.
+Metrics are _regular time-series_ data with _low and fixed cardinality_.
 Metrics are used for defining **SLIs** (service-level indicators), **SLOs** (service-level objectives), and automated alerting.
 Metrics are very good at taking the distribution of data into account.
 Metrics cannot be used with _high-cardinality data_.
@@ -37,3 +37,12 @@ They can also be used for identifying performance bottlenecks.
 Due to their very data-heavy nature, traces in real-world applications need to be _sampled_.
 Insights extracted from traces cannot be aggregated due to the fact that they are sampled.
 In other words, information captured by one trace do not tell anything about how this trace is compared against other traces and what is the distribution of data.
+
+## report
+
+The package can be used for implementing **error and event reporting** in Go applications.
+It uses [Rollbar](https://rollbar.com) API.
+
+Events are also _irregular time-series_ data and can have arbitrary number of metadata.
+They occur in temporal order, but the interval between occurrences are inconsistent and sporadic.
+Reporting is used for alerting on important or critical events such as errors, crashes, etc.
