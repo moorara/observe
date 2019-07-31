@@ -1,5 +1,6 @@
 {
   "extends": [
-    "github>moorara/renovate-config"
-  ]
+    "config:base"
+  ],
+  "postUpdateOptions": [ "gomodTidy" ]
 }
