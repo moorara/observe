@@ -24,4 +24,16 @@ It supports [OpenMetrics](https://openmetrics.io) format and uses [Prometheus](h
 
 Metrics are _time-series_ data with _low and fixed cardinality_.
 Metrics are used for defining **SLIs** (service-level indicators), **SLOs** (service-level objectives), and automated alerting.
+Metrics are very good at taking the distribution of data into account.
 Metrics cannot be used with _high-cardinality data_.
+
+## trace
+
+This package can be used for implementing **tracing** in Go applications.
+It supports [OpenTracing](https://opentracing.io/) format and uses [Jaeger](https://www.jaegertracing.io).
+
+Traces are used for _debugging_ and _tracking_ requests across different processes and services.
+They can also be used for identifying performance bottlenecks.
+Due to their very data-heavy nature, traces in real-world applications need to be _sampled_.
+Insights extracted from traces cannot be aggregated due to the fact that they are sampled.
+In other words, information captured by one trace do not tell anything about how this trace is compared against other traces and what is the distribution of data.
