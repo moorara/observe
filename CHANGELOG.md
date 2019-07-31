@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.1.1](https://github.com/moorara/observe/tree/v0.1.1) (2019-07-31)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.1.0...v0.1.1)
+
+**Merged pull requests:**
+
+- Add report package [\#6](https://github.com/moorara/observe/pull/6) ([moorara](https://github.com/moorara))
+
 ## [v0.1.0](https://github.com/moorara/observe/tree/v0.1.0) (2019-07-31)
 **Merged pull requests:**
 
