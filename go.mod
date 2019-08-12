@@ -8,7 +8,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prometheus/client_golang v1.1.0
-	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
+	github.com/prometheus/client_model v0.0.0-20190812162327-14fe0d1b01d4
 	github.com/rollbar/rollbar-go v1.1.0
 	github.com/stretchr/testify v1.3.0
 	github.com/uber-go/atomic v1.4.0 // indirect
