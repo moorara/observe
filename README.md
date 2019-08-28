@@ -14,7 +14,7 @@ This package can be used for implementing **structured logging** in Go applicati
 It supports four different logging levels and `JSON` logging format.
 
 Logs are used for _auditing_ purposes (sometimes for debugging with limited capabilities).
-When looking at logs, you need know what to look for ahead of the time (know unknowns vs. unknown unknowns).
+When looking at logs, you need know what to look for ahead of the time (known unknowns vs. unknown unknowns).
 Since log data can have any arbitrary shape and size, they cannot be used for real-time computational purposes.
 Logs are hard to track across different and distributed processes. Logs are also very expensive at scale.
 
