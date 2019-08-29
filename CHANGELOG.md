@@ -1,5 +1,18 @@
 # Change Log
 
+## [v0.1.2](https://github.com/moorara/observe/tree/v0.1.2) (2019-08-28)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.1.1...v0.1.2)
+
+**Merged pull requests:**
+
+- Add xhttp and xgrpc packages [\#15](https://github.com/moorara/observe/pull/15) ([moorara](https://github.com/moorara))
+- Fix typo in README [\#13](https://github.com/moorara/observe/pull/13) ([moorara](https://github.com/moorara))
+- Update README.md [\#11](https://github.com/moorara/observe/pull/11) ([moorara](https://github.com/moorara))
+- Update module stretchr/testify to v1.4.0 [\#10](https://github.com/moorara/observe/pull/10) ([renovate[bot]](https://github.com/apps/renovate))
+- Update README.md [\#9](https://github.com/moorara/observe/pull/9) ([moorara](https://github.com/moorara))
+- Update github.com/prometheus/client\_model commit hash to 14fe0d1 [\#8](https://github.com/moorara/observe/pull/8) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module prometheus/client\_golang to v1.1.0 [\#7](https://github.com/moorara/observe/pull/7) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [v0.1.1](https://github.com/moorara/observe/tree/v0.1.1) (2019-07-31)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.1.0...v0.1.1)
 
