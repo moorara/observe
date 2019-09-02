@@ -39,7 +39,7 @@ func TestNewClientMiddleware(t *testing.T) {
 	}{
 		{
 			name:   "WithMocks",
-			logger: log.NewNopLogger(),
+			logger: log.NewVoidLogger(),
 			mf:     metrics.NewFactory(metrics.FactoryOptions{}),
 			tracer: mocktracer.New(),
 		},

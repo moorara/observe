@@ -3,10 +3,10 @@ package main
 import (
 	"net/http"
 
-	xhttp "github.com/moorara/observe/xhttp"
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
 	"github.com/moorara/observe/trace"
+	xhttp "github.com/moorara/observe/xhttp"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -19,7 +19,6 @@ func main() {
 		Name:        "client",
 		Environment: "dev",
 		Region:      "us-east-1",
-		Component:   "http-client",
 	})
 
 	// Create a metrics factory

@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	xgrpc "github.com/moorara/observe/xgrpc"
-	"github.com/moorara/observe/xgrpc/example/zonePB"
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
 	"github.com/moorara/observe/trace"
+	xgrpc "github.com/moorara/observe/xgrpc"
+	"github.com/moorara/observe/xgrpc/example/zonePB"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
@@ -180,7 +180,6 @@ func main() {
 		Name:        "server",
 		Environment: "dev",
 		Region:      "us-east-1",
-		Component:   "grpc-server",
 	})
 
 	// Create a metrics factory

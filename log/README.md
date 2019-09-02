@@ -34,7 +34,7 @@ func main() {
 Output:
 
 ```json
-{"caller":"main.go:15","environment":"staging","error":"too late!","level":"error","message":"Hello, World!","region":"us-east-1","timestamp":"2019-07-31T05:11:42.19237Z"}
+{"caller":"log.go:228","environment":"staging","error":"too late!","level":"error","message":"Hello, World!","region":"us-east-1","timestamp":"2019-09-02T04:44:29.74648Z"}
 ```
 
 Or you can create a new instance logger as follows:
@@ -46,12 +46,11 @@ import "github.com/moorara/observe/log"
 
 func main() {
   logger := log.NewLogger(log.Options{
-    Format:      log.JSON,
-    Level:       "debug",
     Name:        "hello-world",
     Environment: "production",
     Region:      "us-east-1",
-    Component:   "main-function",
+    Level:       "debug",
+    Format:      log.JSON,
   })
 
   logger.Debug(
@@ -66,5 +65,5 @@ func main() {
 Output:
 
 ```json
-{"caller":"main.go:15","component":"main-function","context":{"retries":4},"environment":"production","level":"debug","logger":"hello-world","message":"Hello, World!","region":"us-east-1","timestamp":"2019-07-31T05:12:38.585191Z"}
+{"caller":"log.go:180","context":{"retries":4},"environment":"production","level":"debug","logger":"hello-world","message":"Hello, World!","region":"us-east-1","timestamp":"2019-09-02T04:45:18.426484Z"}
 ```

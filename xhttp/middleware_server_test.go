@@ -32,7 +32,7 @@ func TestLoggerForRequest(t *testing.T) {
 		},
 		{
 			name:       "WithLogger",
-			logger:     log.NewNopLogger(),
+			logger:     log.NewVoidLogger(),
 			expectedOK: true,
 		},
 	}
@@ -64,7 +64,7 @@ func TestNewServerMiddleware(t *testing.T) {
 	}{
 		{
 			name:   "WithMocks",
-			logger: log.NewNopLogger(),
+			logger: log.NewVoidLogger(),
 			mf:     metrics.NewFactory(metrics.FactoryOptions{}),
 			tracer: mocktracer.New(),
 		},
