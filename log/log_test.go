@@ -5,170 +5,309 @@ import (
 	"errors"
 	"testing"
 
+	kitLog "github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockLogger struct {
+type mockKitLogger struct {
 	LogInKV     []interface{}
 	LogOutError error
 }
 
-func (m *mockLogger) Log(kv ...interface{}) error {
+func (m *mockKitLogger) Log(kv ...interface{}) error {
 	m.LogInKV = kv
 	return m.LogOutError
 }
 
-func TestNewNopLogger(t *testing.T) {
-	logger := NewNopLogger()
-	assert.NotNil(t, logger)
-}
-
-func TestNewLogger(t *testing.T) {
+func TestStringToLevel(t *testing.T) {
 	tests := []struct {
-		opts          Options
+		name          string
+		level         string
 		expectedLevel Level
 	}{
+		{"None", "none", NoneLevel},
+		{"Error", "error", ErrorLevel},
+		{"Warn", "warn", WarnLevel},
+		{"Info", "info", InfoLevel},
+		{"Debug", "debug", DebugLevel},
+		{"Default", "trace", InfoLevel},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			level := stringToLevel(tc.level)
+
+			assert.Equal(t, tc.expectedLevel, level)
+		})
+	}
+}
+
+func TestCreateKitLogger(t *testing.T) {
+	tests := []struct {
+		name string
+		opts Options
+	}{
 		{
+			"NoOption",
 			Options{},
-			InfoLevel,
+		},
+		{
+			"WithName",
+			Options{
+				Name: "test",
+			},
+		},
+		{
+			"WithContext",
+			Options{
+				Name:        "test",
+				Environment: "local",
+				Region:      "local",
+			},
+		},
+		{
+			"NoneLevel",
+			Options{
+				Level: "none",
+			},
+		},
+		{
+			"ErrorLevel",
+			Options{
+				Level: "error",
+			},
+		},
+		{
+			"WarnLevel",
+			Options{
+				Level: "warn",
+			},
+		},
+		{
+			"InfoLevel",
+			Options{
+				Level: "info",
+			},
+		},
+		{
+			"DebugLevel",
+			Options{
+				Level: "debug",
+			},
+		},
+		{
+			"JSONLogger",
+			Options{
+				Format: JSON,
+			},
+		},
+		{
+			"LogfmtLogger",
+			Options{
+				Format: Logfmt,
+			},
+		},
+		{
+			"CustomWriter",
+			Options{
+				Writer: &bytes.Buffer{},
+			},
 		},
 	}
 
 	for _, tc := range tests {
-		logger := NewLogger(tc.opts)
-		assert.NotNil(t, logger)
-		assert.NotNil(t, logger.Logger)
-		assert.Equal(t, logger.Level, tc.expectedLevel)
+		t.Run(tc.name, func(t *testing.T) {
+			kitLogger := createKitLogger(tc.opts)
+
+			assert.NotNil(t, kitLogger)
+		})
 	}
 }
 
-func TestLoggerSetOptions(t *testing.T) {
+func TestNewLogger(t *testing.T) {
 	tests := []struct {
 		name          string
 		opts          Options
 		expectedLevel Level
 	}{
 		{
-			"NoLevel",
-			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Component:   "app",
-			},
+			"NoOption",
+			Options{},
 			InfoLevel,
 		},
 		{
-			"DebugLevel",
+			"WithOptions",
 			Options{
-				Format:      Logfmt,
-				Level:       "debug",
-				Name:        "instance",
-				Environment: "dev",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			DebugLevel,
-		},
-		{
-			"InfoLevel",
-			Options{
-				Format:      JSON,
-				Level:       "info",
-				Name:        "instance",
-				Environment: "stage",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			InfoLevel,
-		},
-		{
-			"WarnLevel",
-			Options{
-				Format:      JSON,
-				Level:       "warn",
-				Name:        "instance",
-				Environment: "prod",
-				Region:      "us-east-1",
-				Component:   "app",
+				Name:  "test",
+				Level: "warn",
 			},
 			WarnLevel,
-		},
-		{
-			"ErrorLevel",
-			Options{
-				Format:      JSON,
-				Level:       "error",
-				Name:        "instance",
-				Environment: "prod",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			ErrorLevel,
-		},
-		{
-			"NoneLevel",
-			Options{
-				Level:       "none",
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Component:   "app",
-			},
-			NoneLevel,
-		},
-		{
-			"CustomWriter",
-			Options{
-				Writer:      &bytes.Buffer{},
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Component:   "app",
-			},
-			InfoLevel,
 		},
 	}
 
 	for _, tc := range tests {
-		logger := &Logger{}
-		logger.setOptions(tc.opts)
+		t.Run(tc.name, func(T *testing.T) {
+			logger := NewLogger(tc.opts)
 
-		assert.NotNil(t, logger)
-		assert.NotNil(t, logger.Logger)
-		assert.Equal(t, logger.Level, tc.expectedLevel)
+			assert.NotNil(t, logger)
+			assert.NotNil(t, logger.Logger)
+			assert.Equal(t, logger.Level, tc.expectedLevel)
+		})
 	}
+}
+
+func TestNewVoidLogger(t *testing.T) {
+	logger := NewVoidLogger()
+	assert.NotNil(t, logger)
 }
 
 func TestLoggerWith(t *testing.T) {
 	tests := []struct {
-		mockLogger mockLogger
-		kv         []interface{}
+		logger *Logger
+		kv     []interface{}
 	}{
 		{
-			mockLogger{},
+			&Logger{
+				Level:  InfoLevel,
+				Logger: &kitLog.SwapLogger{},
+			},
 			[]interface{}{"version", "0.1.0", "revision", "1234567", "context", "test"},
 		},
 	}
 
 	for _, tc := range tests {
-		logger := &Logger{Logger: &tc.mockLogger}
-		logger = logger.With(tc.kv...)
+		logger := tc.logger.With(tc.kv...)
+
 		assert.NotNil(t, logger)
+		assert.Equal(t, tc.logger.Level, logger.Level)
 	}
 }
 
-func TestLoggerLog(t *testing.T) {
+func TestSetOptions(t *testing.T) {
+	tests := []struct {
+		name   string
+		logger *Logger
+		opts   Options
+	}{
+		{
+			"NoOption",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{},
+		},
+		{
+			"WithName",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Name: "test",
+			},
+		},
+		{
+			"WithContext",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Name:        "test",
+				Environment: "local",
+				Region:      "local",
+			},
+		},
+		{
+			"NoneLevel",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Level: "none",
+			},
+		},
+		{
+			"ErrorLevel",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Level: "error",
+			},
+		},
+		{
+			"WarnLevel",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Level: "warn",
+			},
+		},
+		{
+			"InfoLevel",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Level: "info",
+			},
+		},
+		{
+			"DebugLevel",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Level: "debug",
+			},
+		},
+		{
+			"JSONLogger",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Format: JSON,
+			},
+		},
+		{
+			"LogfmtLogger",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Format: Logfmt,
+			},
+		},
+		{
+			"CustomWriter",
+			&Logger{
+				Logger: &kitLog.SwapLogger{},
+			},
+			Options{
+				Writer: &bytes.Buffer{},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.logger.SetOptions(tc.opts)
+		})
+	}
+}
+
+func TestLogger(t *testing.T) {
 	tests := []struct {
 		name          string
-		mockLogger    mockLogger
+		mockKitLogger *mockKitLogger
 		kv            []interface{}
 		expectedError error
 		expectedKV    []interface{}
 	}{
 		{
 			"Error",
-			mockLogger{
+			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
 			[]interface{}{"message", "operation failed", "reason", "no capacity"},
@@ -177,7 +316,7 @@ func TestLoggerLog(t *testing.T) {
 		},
 		{
 			"Success",
-			mockLogger{},
+			&mockKitLogger{},
 			[]interface{}{"message", "operation succeeded", "region", "home"},
 			nil,
 			[]interface{}{"message", "operation succeeded", "region", "home"},
@@ -186,13 +325,14 @@ func TestLoggerLog(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger := &Logger{Logger: &tc.mockLogger}
+			logger := &Logger{Logger: &kitLog.SwapLogger{}}
+			logger.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
 				err := logger.Debug(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -200,7 +340,7 @@ func TestLoggerLog(t *testing.T) {
 				err := logger.Info(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -208,7 +348,7 @@ func TestLoggerLog(t *testing.T) {
 				err := logger.Warn(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -216,7 +356,7 @@ func TestLoggerLog(t *testing.T) {
 				err := logger.Error(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 		})
@@ -225,94 +365,94 @@ func TestLoggerLog(t *testing.T) {
 
 func TestSingletonSetOptions(t *testing.T) {
 	tests := []struct {
+		name          string
 		opts          Options
 		expectedLevel Level
 	}{
 		{
+			"WithName",
 			Options{
-				Level:       "",
+				Name: "instance",
+			},
+			InfoLevel,
+		},
+		{
+			"NoneLevel",
+			Options{
 				Name:        "instance",
 				Environment: "test",
 				Region:      "local",
-				Component:   "app",
+				Level:       "none",
 			},
-			InfoLevel,
+			NoneLevel,
 		},
 		{
+			"ErrorLevel",
 			Options{
-				Format:      Logfmt,
-				Level:       "debug",
 				Name:        "instance",
-				Environment: "dev",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			DebugLevel,
-		},
-		{
-			Options{
-				Format:      JSON,
-				Level:       "info",
-				Name:        "instance",
-				Environment: "stage",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			InfoLevel,
-		},
-		{
-			Options{
-				Format:      JSON,
-				Level:       "warn",
-				Name:        "instance",
-				Environment: "prod",
-				Region:      "us-east-1",
-				Component:   "app",
-			},
-			WarnLevel,
-		},
-		{
-			Options{
-				Format:      JSON,
+				Environment: "test",
+				Region:      "local",
 				Level:       "error",
-				Name:        "instance",
-				Environment: "prod",
-				Region:      "us-east-1",
-				Component:   "app",
+				Format:      JSON,
 			},
 			ErrorLevel,
 		},
 		{
+			"WarnLevel",
 			Options{
-				Level:       "none",
 				Name:        "instance",
 				Environment: "test",
 				Region:      "local",
-				Component:   "app",
+				Level:       "warn",
+				Format:      JSON,
 			},
-			NoneLevel,
+			WarnLevel,
+		},
+		{
+			"InfoLevel",
+			Options{
+				Name:        "instance",
+				Environment: "test",
+				Region:      "local",
+				Level:       "info",
+				Format:      JSON,
+			},
+			InfoLevel,
+		},
+		{
+			"DebugLevel",
+			Options{
+				Name:        "instance",
+				Environment: "test",
+				Region:      "local",
+				Level:       "debug",
+				Format:      Logfmt,
+			},
+			DebugLevel,
 		},
 	}
 
 	for _, tc := range tests {
-		SetOptions(tc.opts)
+		t.Run(tc.name, func(t *testing.T) {
+			SetOptions(tc.opts)
 
-		assert.NotNil(t, singleton.Logger)
-		assert.Equal(t, singleton.Level, tc.expectedLevel)
+			assert.NotNil(t, singleton.Logger)
+			assert.Equal(t, singleton.Level, tc.expectedLevel)
+		})
 	}
 }
 
-func TestSingletonLog(t *testing.T) {
+func TestSingletonLogger(t *testing.T) {
 	tests := []struct {
 		name          string
-		mockLogger    mockLogger
+		mockKitLogger *mockKitLogger
 		kv            []interface{}
 		expectedError error
 		expectedKV    []interface{}
 	}{
 		{
 			"Error",
-			mockLogger{
+			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
 			[]interface{}{"message", "operation failed", "reason", "no capacity"},
@@ -321,7 +461,7 @@ func TestSingletonLog(t *testing.T) {
 		},
 		{
 			"Success",
-			mockLogger{},
+			&mockKitLogger{},
 			[]interface{}{"message", "operation succeeded", "region", "home"},
 			nil,
 			[]interface{}{"message", "operation succeeded", "region", "home"},
@@ -330,13 +470,13 @@ func TestSingletonLog(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			singleton = &Logger{Logger: &tc.mockLogger}
+			singleton.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
 				err := Debug(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -344,7 +484,7 @@ func TestSingletonLog(t *testing.T) {
 				err := Info(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -352,7 +492,7 @@ func TestSingletonLog(t *testing.T) {
 				err := Warn(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
@@ -360,7 +500,7 @@ func TestSingletonLog(t *testing.T) {
 				err := Error(tc.kv...)
 				assert.Equal(t, tc.expectedError, err)
 				for _, val := range tc.expectedKV {
-					assert.Contains(t, tc.mockLogger.LogInKV, val)
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 		})
