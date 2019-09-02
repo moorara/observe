@@ -68,7 +68,7 @@ func TestLoggerFromContext(t *testing.T) {
 		{
 			name:       "WithLogger",
 			ctx:        context.Background(),
-			logger:     log.NewNopLogger(),
+			logger:     log.NewVoidLogger(),
 			expectedOK: true,
 		},
 	}
@@ -114,7 +114,7 @@ func TestNewServerInterceptor(t *testing.T) {
 		},
 		{
 			"WithMocks",
-			log.NewNopLogger(),
+			log.NewVoidLogger(),
 			metrics.NewFactory(metrics.FactoryOptions{}),
 			mocktracer.New(),
 		},

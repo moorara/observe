@@ -74,7 +74,7 @@ func TestNewClientInterceptor(t *testing.T) {
 		},
 		{
 			"WithMocks",
-			log.NewNopLogger(),
+			log.NewVoidLogger(),
 			metrics.NewFactory(metrics.FactoryOptions{}),
 			mocktracer.New(),
 		},
