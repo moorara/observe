@@ -1,6 +1,14 @@
 # Change Log
 
-## [v0.1.2](https://github.com/moorara/observe/tree/v0.1.2) (2019-08-28)
+## [v0.2.0](https://github.com/moorara/observe/tree/v0.2.0) (2019-09-02)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.1.2...v0.2.0)
+
+**Merged pull requests:**
+
+- Update logger [\#17](https://github.com/moorara/observe/pull/17) ([moorara](https://github.com/moorara))
+- Update module uber/jaeger-client-go to v2.17.0 [\#16](https://github.com/moorara/observe/pull/16) ([renovate[bot]](https://github.com/apps/renovate))
+
+## [v0.1.2](https://github.com/moorara/observe/tree/v0.1.2) (2019-08-29)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.1.1...v0.1.2)
 
 **Merged pull requests:**
