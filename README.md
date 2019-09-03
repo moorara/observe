@@ -1,3 +1,6 @@
+[![Go Doc][godoc-image]][godoc-url]
+[![Go Report Card][goreport-image]][goreport-url]
+
 # observe
 
 This repo includes core libraries for implementing observability in Go applications.
@@ -48,3 +51,9 @@ It uses [Rollbar](https://rollbar.com) API.
 Events are _irregular time-series_ data and can have arbitrary number of metadata.
 They occur in temporal order, but the interval between occurrences are inconsistent and sporadic.
 Events are used for reporting and alerting on important or critical events such as errors, crashes, etc.
+
+
+[godoc-url]: https://godoc.org/github.com/moorara/observe
+[godoc-image]: https://godoc.org/github.com/moorara/observe?status.svg
+[goreport-url]: https://goreportcard.com/report/github.com/moorara/observe
+[goreport-image]: https://goreportcard.com/badge/github.com/moorara/observe
