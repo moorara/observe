@@ -1,3 +1,4 @@
+[![Go Doc][workflow-image]][workflow-url]
 [![Go Doc][godoc-image]][godoc-url]
 [![Go Report Card][goreport-image]][goreport-url]
 
@@ -53,6 +54,8 @@ They occur in temporal order, but the interval between occurrences are inconsist
 Events are used for reporting and alerting on important or critical events such as errors, crashes, etc.
 
 
+[workflow-url]: https://github.com/moorara/observe/actions
+[workflow-image]: https://github.com/moorara/observe/workflows/Main/badge.svg
 [godoc-url]: https://godoc.org/github.com/moorara/observe
 [godoc-image]: https://godoc.org/github.com/moorara/observe?status.svg
 [goreport-url]: https://goreportcard.com/report/github.com/moorara/observe
