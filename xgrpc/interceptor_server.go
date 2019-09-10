@@ -42,8 +42,18 @@ type ServerInterceptor struct {
 	tracer  opentracing.Tracer
 }
 
-// NewServerInterceptor creates a new instance of gRPC server interceptor
-func NewServerInterceptor(logger *log.Logger, mf *metrics.Factory, tracer opentracing.Tracer) *ServerInterceptor {
+// ServerInterceptorOption sets optional parameters for server interceptor
+type ServerInterceptorOption func(*ServerInterceptor)
+
+// ServerLogging is the option for server interceptor to enable logging for every request
+func ServerLogging(logger *log.Logger) ServerInterceptorOption {
+	return func(i *ServerInterceptor) {
+		i.logger = logger
+	}
+}
+
+// ServerMetrics is the option for server interceptor to enable metrics for every request
+func ServerMetrics(mf *metrics.Factory) ServerInterceptorOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(serverGaugeMetricName, "gauge metric for number of active server-side grpc requests", []string{"package", "service", "method", "stream"}),
 		ReqCounter:      mf.Counter(serverCounterMetricName, "counter metric for total number of server-side grpc requests", []string{"package", "service", "method", "stream", "success"}),
@@ -51,11 +61,26 @@ func NewServerInterceptor(logger *log.Logger, mf *metrics.Factory, tracer opentr
 		ReqDurationSumm: mf.Summary(serverSummaryMetricName, "summary metric for duration of server-side grpc requests in seconds", []string{"package", "service", "method", "stream", "success"}),
 	}
 
-	return &ServerInterceptor{
-		logger:  logger,
-		metrics: metrics,
-		tracer:  tracer,
+	return func(i *ServerInterceptor) {
+		i.metrics = metrics
 	}
+}
+
+// ServerTracing is the option for server interceptor to enable tracing for every request
+func ServerTracing(tracer opentracing.Tracer) ServerInterceptorOption {
+	return func(i *ServerInterceptor) {
+		i.tracer = tracer
+	}
+}
+
+// NewServerInterceptor creates a new instance of gRPC server interceptor
+func NewServerInterceptor(opts ...ServerInterceptorOption) *ServerInterceptor {
+	si := &ServerInterceptor{}
+	for _, opt := range opts {
+		opt(si)
+	}
+
+	return si
 }
 
 func (i *ServerInterceptor) createSpan(ctx context.Context) opentracing.Span {
@@ -104,32 +129,38 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 		return handler(ctx, req)
 	}
 
-	// Increment guage metric
-	i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Inc()
-
-	// Create a new logger that logs the context
-	logger := i.logger.With(
-		"grpc.kind", serverKind,
-		"grpc.package", pkg,
-		"grpc.service", service,
-		"grpc.method", method,
-		"grpc.stream", stream,
-	)
-
-	// Create a new span
-	span := i.createSpan(ctx)
-	defer span.Finish()
-
 	// Get or generate request id
 	requestID := i.getRequestID(ctx)
-
-	// Capture the request id in logs
-	logger = logger.With("requestId", requestID)
-
-	// Update request context
-	ctx = opentracing.ContextWithSpan(ctx, span)
 	ctx = context.WithValue(ctx, requestIDContextKey, requestID)
-	ctx = context.WithValue(ctx, loggerContextKey, logger)
+
+	if i.metrics != nil {
+		// Increment guage metric
+		i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Inc()
+	}
+
+	var logger *log.Logger
+	if i.logger != nil {
+		// Create a new logger that logs the context
+		logger = i.logger.With(
+			"requestId", requestID,
+			"grpc.kind", serverKind,
+			"grpc.package", pkg,
+			"grpc.service", service,
+			"grpc.method", method,
+			"grpc.stream", stream,
+		)
+
+		ctx = context.WithValue(ctx, loggerContextKey, logger)
+	}
+
+	var span opentracing.Span
+	if i.tracer != nil {
+		// Create a new span
+		span = i.createSpan(ctx)
+		defer span.Finish()
+
+		ctx = opentracing.ContextWithSpan(ctx, span)
+	}
 
 	// Call the gRPC method handler
 	start := time.Now()
@@ -137,39 +168,46 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 	success := err == nil
 	duration := time.Since(start).Seconds()
 
-	pairs := []interface{}{
-		"grpc.success", success,
-		"responseTime", duration,
-		"message", fmt.Sprintf("%s %s.%s.%s %f", serverKind, pkg, service, method, duration),
-	}
+	// Logging
+	if i.logger != nil {
+		pairs := []interface{}{
+			"grpc.success", success,
+			"responseTime", duration,
+			"message", fmt.Sprintf("%s %s.%s.%s %f", serverKind, pkg, service, method, duration),
+		}
 
-	if err != nil {
-		pairs = append(pairs, "grpc.error", err.Error())
-	}
+		if err != nil {
+			pairs = append(pairs, "grpc.error", err.Error())
+		}
 
-	if success {
-		logger.Info(pairs...)
-	} else {
-		logger.Error(pairs...)
+		if success {
+			logger.Info(pairs...)
+		} else {
+			logger.Error(pairs...)
+		}
 	}
 
 	// Metrics
-	successText := strconv.FormatBool(success)
-	i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Dec()
-	i.metrics.ReqCounter.WithLabelValues(pkg, service, method, stream, successText).Inc()
-	i.metrics.ReqDurationHist.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
-	i.metrics.ReqDurationSumm.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+	if i.metrics != nil {
+		successText := strconv.FormatBool(success)
+		i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Dec()
+		i.metrics.ReqCounter.WithLabelValues(pkg, service, method, stream, successText).Inc()
+		i.metrics.ReqDurationHist.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+		i.metrics.ReqDurationSumm.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+	}
 
 	// Tracing
-	// https://github.com/opentracing/specification/blob/master/semantic_conventions.md
-	ext.SpanKind.Set(span, ext.SpanKindRPCServerEnum)
-	span.SetTag("grpc.package", pkg).SetTag("grpc.service", service).SetTag("grpc.method", method).SetTag("grpc.stream", stream).SetTag("grpc.success", success)
+	if i.tracer != nil {
+		// https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+		ext.SpanKind.Set(span, ext.SpanKindRPCServerEnum)
+		span.SetTag("grpc.package", pkg).SetTag("grpc.service", service).SetTag("grpc.method", method).SetTag("grpc.stream", stream).SetTag("grpc.success", success)
 
-	if err != nil {
-		ext.Error.Set(span, true)
-		span.LogFields(
-			opentracingLog.String("grpc.error", err.Error()),
-		)
+		if err != nil {
+			ext.Error.Set(span, true)
+			span.LogFields(
+				opentracingLog.String("grpc.error", err.Error()),
+			)
+		}
 	}
 
 	return res, err
@@ -185,32 +223,38 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 		return handler(srv, ss)
 	}
 
-	// Increment guage metric
-	i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Inc()
-
-	// Create a new logger that logs the context
-	logger := i.logger.With(
-		"grpc.kind", serverKind,
-		"grpc.package", pkg,
-		"grpc.service", service,
-		"grpc.method", method,
-		"grpc.stream", stream,
-	)
-
-	// Create a new span
-	span := i.createSpan(ctx)
-	defer span.Finish()
-
 	// Get or generate request id
 	requestID := i.getRequestID(ctx)
-
-	// Capture the request id in logs
-	logger = logger.With("requestId", requestID)
-
-	// Update stream context
-	ctx = opentracing.ContextWithSpan(ctx, span)
 	ctx = context.WithValue(ctx, requestIDContextKey, requestID)
-	ctx = context.WithValue(ctx, loggerContextKey, logger)
+
+	if i.metrics != nil {
+		// Increment guage metric
+		i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Inc()
+	}
+
+	var logger *log.Logger
+	if i.logger != nil {
+		// Create a new logger that logs the context
+		logger = i.logger.With(
+			"requestId", requestID,
+			"grpc.kind", serverKind,
+			"grpc.package", pkg,
+			"grpc.service", service,
+			"grpc.method", method,
+			"grpc.stream", stream,
+		)
+
+		ctx = context.WithValue(ctx, loggerContextKey, logger)
+	}
+
+	var span opentracing.Span
+	if i.tracer != nil {
+		// Create a new span
+		span = i.createSpan(ctx)
+		defer span.Finish()
+
+		ctx = opentracing.ContextWithSpan(ctx, span)
+	}
 
 	ss = ServerStreamWithContext(ss, ctx)
 
@@ -220,39 +264,46 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 	success := err == nil
 	duration := time.Since(start).Seconds()
 
-	pairs := []interface{}{
-		"grpc.success", success,
-		"responseTime", duration,
-		"message", fmt.Sprintf("%s %s.%s.%s %f", serverKind, pkg, service, method, duration),
-	}
+	// Logging
+	if i.logger != nil {
+		pairs := []interface{}{
+			"grpc.success", success,
+			"responseTime", duration,
+			"message", fmt.Sprintf("%s %s.%s.%s %f", serverKind, pkg, service, method, duration),
+		}
 
-	if err != nil {
-		pairs = append(pairs, "grpc.error", err.Error())
-	}
+		if err != nil {
+			pairs = append(pairs, "grpc.error", err.Error())
+		}
 
-	if success {
-		logger.Info(pairs...)
-	} else {
-		logger.Error(pairs...)
+		if success {
+			logger.Info(pairs...)
+		} else {
+			logger.Error(pairs...)
+		}
 	}
 
 	// Metrics
-	successText := strconv.FormatBool(success)
-	i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Dec()
-	i.metrics.ReqCounter.WithLabelValues(pkg, service, method, stream, successText).Inc()
-	i.metrics.ReqDurationHist.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
-	i.metrics.ReqDurationSumm.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+	if i.metrics != nil {
+		successText := strconv.FormatBool(success)
+		i.metrics.ReqGauge.WithLabelValues(pkg, service, method, stream).Dec()
+		i.metrics.ReqCounter.WithLabelValues(pkg, service, method, stream, successText).Inc()
+		i.metrics.ReqDurationHist.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+		i.metrics.ReqDurationSumm.WithLabelValues(pkg, service, method, stream, successText).Observe(duration)
+	}
 
 	// Tracing
-	// https://github.com/opentracing/specification/blob/master/semantic_conventions.md
-	ext.SpanKind.Set(span, ext.SpanKindRPCServerEnum)
-	span.SetTag("grpc.package", pkg).SetTag("grpc.service", service).SetTag("grpc.method", method).SetTag("grpc.stream", stream).SetTag("grpc.success", success)
+	if i.tracer != nil {
+		// https://github.com/opentracing/specification/blob/master/semantic_conventions.md
+		ext.SpanKind.Set(span, ext.SpanKindRPCServerEnum)
+		span.SetTag("grpc.package", pkg).SetTag("grpc.service", service).SetTag("grpc.method", method).SetTag("grpc.stream", stream).SetTag("grpc.success", success)
 
-	if err != nil {
-		ext.Error.Set(span, true)
-		span.LogFields(
-			opentracingLog.String("grpc.error", err.Error()),
-		)
+		if err != nil {
+			ext.Error.Set(span, true)
+			span.LogFields(
+				opentracingLog.String("grpc.error", err.Error()),
+			)
+		}
 	}
 
 	return err

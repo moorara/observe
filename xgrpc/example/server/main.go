@@ -190,7 +190,11 @@ func main() {
 	defer closer.Close()
 
 	// Create a gRPC interceptor
-	i := xgrpc.NewServerInterceptor(logger, mf, tracer)
+	i := xgrpc.NewServerInterceptor(
+		xgrpc.ServerLogging(logger),
+		xgrpc.ServerMetrics(mf),
+		xgrpc.ServerTracing(tracer),
+	)
 
 	optUnaryInterceptor := grpc.UnaryInterceptor(i.UnaryInterceptor)
 	optStreamInterceptor := grpc.StreamInterceptor(i.StreamInterceptor)
