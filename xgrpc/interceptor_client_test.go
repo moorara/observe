@@ -47,6 +47,50 @@ func extractRequestID(ctx context.Context) string {
 	return ""
 }
 
+func TestClientInterceptorOptions(t *testing.T) {
+	logger := log.NewVoidLogger()
+	// mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: prometheus.NewRegistry()})
+	tracer := mocktracer.New()
+
+	tests := []struct {
+		name                      string
+		clientInterceptor         ClientInterceptor
+		opt                       ClientInterceptorOption
+		expectedClientInterceptor ClientInterceptor
+	}{
+		{
+			"ClientLogging",
+			ClientInterceptor{},
+			ClientLogging(logger),
+			ClientInterceptor{
+				logger: logger,
+			},
+		},
+		/* {
+			"ClientMetrics",
+			ClientInterceptor{},
+			ClientMetrics(mf),
+			ClientInterceptor{},
+		}, */
+		{
+			"ClientTracing",
+			ClientInterceptor{},
+			ClientTracing(tracer),
+			ClientInterceptor{
+				tracer: tracer,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opt(&tc.clientInterceptor)
+
+			assert.Equal(t, tc.expectedClientInterceptor, tc.clientInterceptor)
+		})
+	}
+}
+
 func TestNewClientInterceptor(t *testing.T) {
 	logger := log.NewLogger(log.Options{
 		Level:       "info",
@@ -82,11 +126,15 @@ func TestNewClientInterceptor(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			coi := NewClientInterceptor(tc.logger, tc.mf, tc.tracer)
+			ci := NewClientInterceptor(
+				ClientLogging(tc.logger),
+				ClientMetrics(tc.mf),
+				ClientTracing(tc.tracer),
+			)
 
-			assert.Equal(t, tc.logger, coi.logger)
-			assert.NotNil(t, coi.metrics)
-			assert.Equal(t, tc.tracer, coi.tracer)
+			assert.Equal(t, tc.logger, ci.logger)
+			assert.NotNil(t, ci.metrics)
+			assert.Equal(t, tc.tracer, ci.tracer)
 		})
 	}
 }
@@ -321,7 +369,12 @@ func TestUnaryClientInterceptor(t *testing.T) {
 			tracer := mocktracer.New()
 
 			// Create the interceptor
-			i := NewClientInterceptor(logger, mf, tracer)
+			i := NewClientInterceptor(
+				ClientLogging(logger),
+				ClientMetrics(mf),
+				ClientTracing(tracer),
+			)
+
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {
@@ -593,7 +646,12 @@ func TestStreamClientInterceptor(t *testing.T) {
 			tracer := mocktracer.New()
 
 			// Create the interceptor
-			i := NewClientInterceptor(logger, mf, tracer)
+			i := NewClientInterceptor(
+				ClientLogging(logger),
+				ClientMetrics(mf),
+				ClientTracing(tracer),
+			)
+
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {

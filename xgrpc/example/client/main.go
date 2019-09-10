@@ -188,7 +188,11 @@ func main() {
 	}()
 
 	// Create a gRPC interceptor
-	i := xgrpc.NewClientInterceptor(logger, mf, tracer)
+	i := xgrpc.NewClientInterceptor(
+		xgrpc.ClientLogging(logger),
+		xgrpc.ClientMetrics(mf),
+		xgrpc.ClientTracing(tracer),
+	)
 
 	optInsecure := grpc.WithInsecure()
 	optUnaryInterceptor := grpc.WithUnaryInterceptor(i.UnaryInterceptor)

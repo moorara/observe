@@ -87,6 +87,50 @@ func TestLoggerFromContext(t *testing.T) {
 	}
 }
 
+func TestServerInterceptorOptions(t *testing.T) {
+	logger := log.NewVoidLogger()
+	// mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: prometheus.NewRegistry()})
+	tracer := mocktracer.New()
+
+	tests := []struct {
+		name                      string
+		serverInterceptor         ServerInterceptor
+		opt                       ServerInterceptorOption
+		expectedServerInterceptor ServerInterceptor
+	}{
+		{
+			"ServerLogging",
+			ServerInterceptor{},
+			ServerLogging(logger),
+			ServerInterceptor{
+				logger: logger,
+			},
+		},
+		/* {
+			"ServerMetrics",
+			ServerInterceptor{},
+			ServerMetrics(mf),
+			ServerInterceptor{},
+		}, */
+		{
+			"ServerTracing",
+			ServerInterceptor{},
+			ServerTracing(tracer),
+			ServerInterceptor{
+				tracer: tracer,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opt(&tc.serverInterceptor)
+
+			assert.Equal(t, tc.expectedServerInterceptor, tc.serverInterceptor)
+		})
+	}
+}
+
 func TestNewServerInterceptor(t *testing.T) {
 	logger := log.NewLogger(log.Options{
 		Level:       "info",
@@ -122,11 +166,15 @@ func TestNewServerInterceptor(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			soi := NewServerInterceptor(tc.logger, tc.mf, tc.tracer)
+			si := NewServerInterceptor(
+				ServerLogging(tc.logger),
+				ServerMetrics(tc.mf),
+				ServerTracing(tc.tracer),
+			)
 
-			assert.Equal(t, tc.logger, soi.logger)
-			assert.NotNil(t, soi.metrics)
-			assert.Equal(t, tc.tracer, soi.tracer)
+			assert.Equal(t, tc.logger, si.logger)
+			assert.NotNil(t, si.metrics)
+			assert.Equal(t, tc.tracer, si.tracer)
 		})
 	}
 }
@@ -248,7 +296,12 @@ func TestUnaryServerInterceptor(t *testing.T) {
 			tracer := mocktracer.New()
 
 			// Create the interceptor
-			i := NewServerInterceptor(logger, mf, tracer)
+			i := NewServerInterceptor(
+				ServerLogging(logger),
+				ServerMetrics(mf),
+				ServerTracing(tracer),
+			)
+
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {
@@ -483,7 +536,12 @@ func TestStreamServerInterceptor(t *testing.T) {
 			tracer := mocktracer.New()
 
 			// Create the interceptor
-			i := NewServerInterceptor(logger, mf, tracer)
+			i := NewServerInterceptor(
+				ServerLogging(logger),
+				ServerMetrics(mf),
+				ServerTracing(tracer),
+			)
+
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {
