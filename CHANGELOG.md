@@ -1,5 +1,22 @@
 # Change Log
 
+## [v0.2.1](https://github.com/moorara/observe/tree/v0.2.1) (2019-09-10)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.2.0...v0.2.1)
+
+**Closed issues:**
+
+- Migrate to New GitHub Actions [\#12](https://github.com/moorara/observe/issues/12)
+
+**Merged pull requests:**
+
+- Refactor xgrpc [\#24](https://github.com/moorara/observe/pull/24) ([moorara](https://github.com/moorara))
+- Update module uber/jaeger-client-go to v2.18.0 [\#23](https://github.com/moorara/observe/pull/23) ([renovate[bot]](https://github.com/apps/renovate))
+- Add GitHub badge [\#22](https://github.com/moorara/observe/pull/22) ([moorara](https://github.com/moorara))
+- Update module uber/jaeger-lib to v2.1.1 [\#21](https://github.com/moorara/observe/pull/21) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module uber/jaeger-lib to v2.1.0 [\#20](https://github.com/moorara/observe/pull/20) ([renovate[bot]](https://github.com/apps/renovate))
+- Add Go Doc and Go Report Card badges [\#19](https://github.com/moorara/observe/pull/19) ([moorara](https://github.com/moorara))
+- Migrate to new GitHub actions and workflows [\#18](https://github.com/moorara/observe/pull/18) ([moorara](https://github.com/moorara))
+
 ## [v0.2.0](https://github.com/moorara/observe/tree/v0.2.0) (2019-09-02)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.1.2...v0.2.0)
 
