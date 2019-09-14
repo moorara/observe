@@ -18,6 +18,14 @@ import (
 
 var loggerContextKey = contextKey("logger")
 
+// ContextForTest takes in a request context and inserts a RequestID as well as a new Void Logger.
+// For use in tests only, to test functions which expect a logger and RequestID to have been added by the interceptor.
+func ContextForTest(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, requestIDContextKey, uuid.New().String())
+	ctx = context.WithValue(ctx, loggerContextKey, log.NewVoidLogger())
+	return ctx
+}
+
 // LoggerFromContext returns a logger set by grpc server interceptor on each incoming context
 func LoggerFromContext(ctx context.Context) (*log.Logger, bool) {
 	val := ctx.Value(loggerContextKey)
@@ -83,6 +91,23 @@ func NewServerInterceptor(opts ...ServerInterceptorOption) *ServerInterceptor {
 	return si
 }
 
+func (i *ServerInterceptor) getRequestID(ctx context.Context) string {
+	var requestID string
+
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		vals := md.Get(requestIDKey)
+		if len(vals) > 0 {
+			requestID = vals[0]
+		}
+	}
+
+	if requestID == "" {
+		requestID = uuid.New().String()
+	}
+
+	return requestID
+}
+
 func (i *ServerInterceptor) createSpan(ctx context.Context) opentracing.Span {
 	var span opentracing.Span
 	var parentSpanContext opentracing.SpanContext
@@ -102,23 +127,6 @@ func (i *ServerInterceptor) createSpan(ctx context.Context) opentracing.Span {
 	}
 
 	return span
-}
-
-func (i *ServerInterceptor) getRequestID(ctx context.Context) string {
-	var requestID string
-
-	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		vals := md.Get(requestIDKey)
-		if len(vals) > 0 {
-			requestID = vals[0]
-		}
-	}
-
-	if requestID == "" {
-		requestID = uuid.New().String()
-	}
-
-	return requestID
 }
 
 // UnaryInterceptor is the gRPC UnaryServerInterceptor for logging, metrics, and tracing

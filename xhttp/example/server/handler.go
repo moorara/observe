@@ -20,7 +20,7 @@ func (s *server) handler(w http.ResponseWriter, r *http.Request) {
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xhttp.LoggerForRequest(r)
+	logger, _ := xhttp.LoggerFromContext(r.Context())
 	logger.Info("message", "handled the request successfully!")
 
 	// Create a new span

@@ -52,6 +52,18 @@ func injectRequestID(ctx context.Context, requestID string) context.Context {
 	return metadata.NewIncomingContext(ctx, md)
 }
 
+func TestContextForTest(t *testing.T) {
+	ctx := ContextForTest(context.Background())
+
+	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	assert.True(t, ok)
+	assert.NotEmpty(t, requestID)
+
+	logger, ok := LoggerFromContext(ctx)
+	assert.True(t, ok)
+	assert.NotNil(t, logger)
+}
+
 func TestLoggerFromContext(t *testing.T) {
 	tests := []struct {
 		name       string

@@ -30,6 +30,50 @@ func extractSpanContext(req *http.Request, tracer opentracing.Tracer) opentracin
 	return nil
 }
 
+func TestClientMiddlewareOptions(t *testing.T) {
+	logger := log.NewVoidLogger()
+	// mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: prometheus.NewRegistry()})
+	tracer := mocktracer.New()
+
+	tests := []struct {
+		name                     string
+		clientMiddleware         ClientMiddleware
+		opt                      ClientMiddlewareOption
+		expectedClientMiddleware ClientMiddleware
+	}{
+		{
+			"ClientLogging",
+			ClientMiddleware{},
+			ClientLogging(logger),
+			ClientMiddleware{
+				logger: logger,
+			},
+		},
+		/* {
+			"ClientMetrics",
+			ClientMiddleware{},
+			ClientMetrics(mf),
+			ClientMiddleware{},
+		}, */
+		{
+			"ClientTracing",
+			ClientMiddleware{},
+			ClientTracing(tracer),
+			ClientMiddleware{
+				tracer: tracer,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opt(&tc.clientMiddleware)
+
+			assert.Equal(t, tc.expectedClientMiddleware, tc.clientMiddleware)
+		})
+	}
+}
+
 func TestNewClientMiddleware(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -47,7 +91,11 @@ func TestNewClientMiddleware(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewClientMiddleware(tc.logger, tc.mf, tc.tracer)
+			m := NewClientMiddleware(
+				ClientLogging(tc.logger),
+				ClientMetrics(tc.mf),
+				ClientTracing(tc.tracer),
+			)
 
 			assert.Equal(t, tc.logger, m.logger)
 			assert.NotNil(t, m.metrics)
@@ -378,7 +426,8 @@ func TestClientMiddlewareMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			promReg := prometheus.NewRegistry()
 			metricsFactory := metrics.NewFactory(metrics.FactoryOptions{Registerer: promReg})
-			mid := NewClientMiddleware(nil, metricsFactory, nil)
+			mid := &ClientMiddleware{}
+			ClientMetrics(metricsFactory)(mid)
 			assert.NotNil(t, mid)
 
 			// Test http doer
