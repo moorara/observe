@@ -1,5 +1,13 @@
 # Change Log
 
+## [v0.2.2](https://github.com/moorara/observe/tree/v0.2.2) (2019-09-13)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.2.1...v0.2.2)
+
+**Merged pull requests:**
+
+- Update xhttp and xgrpc packages [\#26](https://github.com/moorara/observe/pull/26) ([moorara](https://github.com/moorara))
+- Update module google.golang.org/grpc to v1.23.1 [\#25](https://github.com/moorara/observe/pull/25) ([renovate[bot]](https://github.com/apps/renovate))
+
 ## [v0.2.1](https://github.com/moorara/observe/tree/v0.2.1) (2019-09-10)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.2.0...v0.2.1)
 
