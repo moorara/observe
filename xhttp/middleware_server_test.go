@@ -19,7 +19,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLoggerForRequest(t *testing.T) {
+func TestContextForTest(t *testing.T) {
+	ctx := ContextForTest(context.Background())
+
+	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	assert.True(t, ok)
+	assert.NotEmpty(t, requestID)
+
+	logger, ok := LoggerFromContext(ctx)
+	assert.True(t, ok)
+	assert.NotNil(t, logger)
+}
+
+func TestLoggerFromContext(t *testing.T) {
 	tests := []struct {
 		name       string
 		logger     *log.Logger
@@ -47,10 +59,54 @@ func TestLoggerForRequest(t *testing.T) {
 				req = req.WithContext(ctx)
 			}
 
-			logger, ok := LoggerForRequest(req)
+			logger, ok := LoggerFromContext(req.Context())
 
 			assert.Equal(t, tc.expectedOK, ok)
 			assert.Equal(t, tc.logger, logger)
+		})
+	}
+}
+
+func TestServerMiddlewareOptions(t *testing.T) {
+	logger := log.NewVoidLogger()
+	// mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: prometheus.NewRegistry()})
+	tracer := mocktracer.New()
+
+	tests := []struct {
+		name                     string
+		serverMiddleware         ServerMiddleware
+		opt                      ServerMiddlewareOption
+		expectedServerMiddleware ServerMiddleware
+	}{
+		{
+			"ServerLogging",
+			ServerMiddleware{},
+			ServerLogging(logger),
+			ServerMiddleware{
+				logger: logger,
+			},
+		},
+		/* {
+			"ServerMetrics",
+			ServerMiddleware{},
+			ServerMetrics(mf),
+			ServerMiddleware{},
+		}, */
+		{
+			"ServerTracing",
+			ServerMiddleware{},
+			ServerTracing(tracer),
+			ServerMiddleware{
+				tracer: tracer,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.opt(&tc.serverMiddleware)
+
+			assert.Equal(t, tc.expectedServerMiddleware, tc.serverMiddleware)
 		})
 	}
 }
@@ -72,7 +128,11 @@ func TestNewServerMiddleware(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := NewServerMiddleware(tc.logger, tc.mf, tc.tracer)
+			m := NewServerMiddleware(
+				ServerLogging(tc.logger),
+				ServerMetrics(tc.mf),
+				ServerTracing(tc.tracer),
+			)
 
 			assert.Equal(t, tc.logger, m.logger)
 			assert.NotNil(t, m.metrics)
@@ -315,7 +375,8 @@ func TestServerMiddlewareMetrics(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			promReg := prometheus.NewRegistry()
 			metricsFactory := metrics.NewFactory(metrics.FactoryOptions{Registerer: promReg})
-			mid := NewServerMiddleware(nil, metricsFactory, nil)
+			mid := &ServerMiddleware{}
+			ServerMetrics(metricsFactory)(mid)
 			assert.NotNil(t, mid)
 
 			// Test http handler

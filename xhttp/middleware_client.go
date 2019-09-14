@@ -24,20 +24,28 @@ const (
 	clientSummaryMetricName   = "http_client_request_duration_quantiles_seconds"
 )
 
-type (
-	// Doer is the interface for standard http.Client Do method
-	Doer func(*http.Request) (*http.Response, error)
+// Doer is the interface for standard http.Client Do method
+type Doer func(*http.Request) (*http.Response, error)
 
-	// ClientMiddleware is an http client middleware for logging, metrics, tracing, etc.
-	ClientMiddleware struct {
-		logger  *log.Logger
-		metrics *metrics.RequestMetrics
-		tracer  opentracing.Tracer
+// ClientMiddleware is an http client middleware for logging, metrics, tracing, etc.
+type ClientMiddleware struct {
+	logger  *log.Logger
+	metrics *metrics.RequestMetrics
+	tracer  opentracing.Tracer
+}
+
+// ClientMiddlewareOption sets optional parameters for client middleware
+type ClientMiddlewareOption func(*ClientMiddleware)
+
+// ClientLogging is the option for client middleware to enable logging for every request
+func ClientLogging(logger *log.Logger) ClientMiddlewareOption {
+	return func(i *ClientMiddleware) {
+		i.logger = logger
 	}
-)
+}
 
-// NewClientMiddleware creates a new instance of http client middleware
-func NewClientMiddleware(logger *log.Logger, mf *metrics.Factory, tracer opentracing.Tracer) *ClientMiddleware {
+// ClientMetrics is the option for client middleware to enable metrics for every request
+func ClientMetrics(mf *metrics.Factory) ClientMiddlewareOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(clientGaugeMetricName, "gauge metric for number of active client-side http requests", []string{"method", "url"}),
 		ReqCounter:      mf.Counter(clientCounterMetricName, "counter metric for total number of client-side http requests", []string{"method", "url", "statusCode", "statusClass"}),
@@ -45,11 +53,26 @@ func NewClientMiddleware(logger *log.Logger, mf *metrics.Factory, tracer opentra
 		ReqDurationSumm: mf.Summary(clientSummaryMetricName, "summary metric for duration of client-side http requests in seconds", []string{"method", "url", "statusCode", "statusClass"}),
 	}
 
-	return &ClientMiddleware{
-		logger:  logger,
-		metrics: metrics,
-		tracer:  tracer,
+	return func(i *ClientMiddleware) {
+		i.metrics = metrics
 	}
+}
+
+// ClientTracing is the option for client middleware to enable tracing for every request
+func ClientTracing(tracer opentracing.Tracer) ClientMiddlewareOption {
+	return func(i *ClientMiddleware) {
+		i.tracer = tracer
+	}
+}
+
+// NewClientMiddleware creates a new instance of http client middleware
+func NewClientMiddleware(opts ...ClientMiddlewareOption) *ClientMiddleware {
+	cm := &ClientMiddleware{}
+	for _, opt := range opts {
+		opt(cm)
+	}
+
+	return cm
 }
 
 // RequestID ensures outgoing requests have unique ids

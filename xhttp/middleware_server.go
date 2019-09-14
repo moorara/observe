@@ -25,9 +25,16 @@ const (
 	serverSummaryMetricName   = "http_server_request_duration_quantiles_seconds"
 )
 
-// LoggerForRequest returns a logger set by http middleware on each request context
-func LoggerForRequest(r *http.Request) (*log.Logger, bool) {
-	ctx := r.Context()
+// ContextForTest takes in a request context and inserts a RequestID as well as a new Void Logger.
+// For use in tests only, to test functions which expect a logger and RequestID to have been added by the middleware.
+func ContextForTest(ctx context.Context) context.Context {
+	ctx = context.WithValue(ctx, requestIDContextKey, uuid.New().String())
+	ctx = context.WithValue(ctx, loggerContextKey, log.NewVoidLogger())
+	return ctx
+}
+
+// LoggerFromContext returns a logger set by http middleware on the request context
+func LoggerFromContext(ctx context.Context) (*log.Logger, bool) {
 	val := ctx.Value(loggerContextKey)
 	logger, ok := val.(*log.Logger)
 
@@ -41,8 +48,18 @@ type ServerMiddleware struct {
 	tracer  opentracing.Tracer
 }
 
-// NewServerMiddleware creates a new instance of http server middleware
-func NewServerMiddleware(logger *log.Logger, mf *metrics.Factory, tracer opentracing.Tracer) *ServerMiddleware {
+// ServerMiddlewareOption sets optional parameters for server middleware
+type ServerMiddlewareOption func(*ServerMiddleware)
+
+// ServerLogging is the option for server middleware to enable logging for every request
+func ServerLogging(logger *log.Logger) ServerMiddlewareOption {
+	return func(i *ServerMiddleware) {
+		i.logger = logger
+	}
+}
+
+// ServerMetrics is the option for server middleware to enable metrics for every request
+func ServerMetrics(mf *metrics.Factory) ServerMiddlewareOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(serverGaugeMetricName, "gauge metric for number of active server-side http requests", []string{"method", "url"}),
 		ReqCounter:      mf.Counter(serverCounterMetricName, "counter metric for total number of server-side http requests", []string{"method", "url", "statusCode", "statusClass"}),
@@ -50,11 +67,26 @@ func NewServerMiddleware(logger *log.Logger, mf *metrics.Factory, tracer opentra
 		ReqDurationSumm: mf.Summary(serverSummaryMetricName, "summary metric for duration of server-side http requests in seconds", []string{"method", "url", "statusCode", "statusClass"}),
 	}
 
-	return &ServerMiddleware{
-		logger:  logger,
-		metrics: metrics,
-		tracer:  tracer,
+	return func(i *ServerMiddleware) {
+		i.metrics = metrics
 	}
+}
+
+// ServerTracing is the option for server middleware to enable tracing for every request
+func ServerTracing(tracer opentracing.Tracer) ServerMiddlewareOption {
+	return func(i *ServerMiddleware) {
+		i.tracer = tracer
+	}
+}
+
+// NewServerMiddleware creates a new instance of http server middleware
+func NewServerMiddleware(opts ...ServerMiddlewareOption) *ServerMiddleware {
+	sm := &ServerMiddleware{}
+	for _, opt := range opts {
+		opt(sm)
+	}
+
+	return sm
 }
 
 // RequestID ensures incoming requests have unique ids
