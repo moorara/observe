@@ -28,7 +28,11 @@ func main() {
 	defer closer.Close()
 
 	// Create an http server middleware
-	mid := xhttp.NewServerMiddleware(logger, mf, tracer)
+	mid := xhttp.NewServerMiddleware(
+		xhttp.ServerLogging(logger),
+		xhttp.ServerMetrics(mf),
+		xhttp.ServerTracing(tracer),
+	)
 
 	s := &server{tracer: tracer}
 	h := mid.Metrics(mid.RequestID(mid.Tracing(mid.Logging(s.handler))))

@@ -35,7 +35,11 @@ func main() {
 	}()
 
 	// Create an http client middleware
-	mid := xhttp.NewClientMiddleware(logger, mf, tracer)
+	mid := xhttp.NewClientMiddleware(
+		xhttp.ClientLogging(logger),
+		xhttp.ClientMetrics(mf),
+		xhttp.ClientTracing(tracer),
+	)
 
 	c := &client{
 		logger: logger,
