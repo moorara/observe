@@ -1,6 +1,19 @@
 # Change Log
 
-## [v0.2.2](https://github.com/moorara/observe/tree/v0.2.2) (2019-09-13)
+## [v0.2.3](https://github.com/moorara/observe/tree/v0.2.3) (2019-09-14)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.2.2...v0.2.3)
+
+**Closed issues:**
+
+- Add Readme Badges [\#14](https://github.com/moorara/observe/issues/14)
+
+**Merged pull requests:**
+
+- Add request package [\#29](https://github.com/moorara/observe/pull/29) ([moorara](https://github.com/moorara))
+- Add badges [\#28](https://github.com/moorara/observe/pull/28) ([moorara](https://github.com/moorara))
+- Add Test Coverage Report [\#27](https://github.com/moorara/observe/pull/27) ([moorara](https://github.com/moorara))
+
+## [v0.2.2](https://github.com/moorara/observe/tree/v0.2.2) (2019-09-14)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.2.1...v0.2.2)
 
 **Merged pull requests:**
