@@ -12,6 +12,7 @@ import (
 
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,49 +23,12 @@ import (
 func TestContextForTest(t *testing.T) {
 	ctx := ContextForTest(context.Background())
 
-	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	requestID, ok := request.IDFromContext(ctx)
 	assert.True(t, ok)
 	assert.NotEmpty(t, requestID)
 
-	logger, ok := LoggerFromContext(ctx)
-	assert.True(t, ok)
+	logger := log.LoggerFromContext(ctx)
 	assert.NotNil(t, logger)
-}
-
-func TestLoggerFromContext(t *testing.T) {
-	tests := []struct {
-		name       string
-		logger     *log.Logger
-		expectedOK bool
-	}{
-		{
-			name:       "WithoutLogger",
-			logger:     nil,
-			expectedOK: false,
-		},
-		{
-			name:       "WithLogger",
-			logger:     log.NewVoidLogger(),
-			expectedOK: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			req, err := http.NewRequest("GET", "/", nil)
-			assert.NoError(t, err)
-
-			if tc.logger != nil {
-				ctx := context.WithValue(req.Context(), loggerContextKey, tc.logger)
-				req = req.WithContext(ctx)
-			}
-
-			logger, ok := LoggerFromContext(req.Context())
-
-			assert.Equal(t, tc.expectedOK, ok)
-			assert.Equal(t, tc.logger, logger)
-		})
-	}
 }
 
 func TestServerMiddlewareOptions(t *testing.T) {
@@ -177,7 +141,7 @@ func TestServerMiddlewareRequestID(t *testing.T) {
 			// Test http handler
 			handler := mid.RequestID(func(w http.ResponseWriter, r *http.Request) {
 				requestIDFromHeader = r.Header.Get(requestIDHeader)
-				requestIDFromContext, _ = r.Context().Value(requestIDContextKey).(string)
+				requestIDFromContext, _ = request.IDFromContext(r.Context())
 				w.WriteHeader(tc.resStatusCode)
 			})
 

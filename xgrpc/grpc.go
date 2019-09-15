@@ -7,13 +7,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// contextKey is the type for the keys added to context
-type contextKey string
-
-const (
-	requestIDKey        = "request-id"
-	requestIDContextKey = contextKey("requestID")
-)
+const requestIDKey = "request-id"
 
 var methodRegex = regexp.MustCompile(`(/|\.)`)
 
@@ -40,7 +34,7 @@ func (s *xServerStream) Context() context.Context {
 	return s.context
 }
 
-// ServerStreamWithContext return new grpc.ServerStream with a new context
+// ServerStreamWithContext return new grpc.ServerStream with a new context.
 func ServerStreamWithContext(stream grpc.ServerStream, ctx context.Context) grpc.ServerStream {
 	if ss, ok := stream.(*xServerStream); ok {
 		return ss

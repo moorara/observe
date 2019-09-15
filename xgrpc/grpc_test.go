@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+type contextKey string
+
 func TestParseMethod(t *testing.T) {
 	tests := []struct {
 		name            string

@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"testing"
 
@@ -503,6 +504,59 @@ func TestSingletonLogger(t *testing.T) {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
+		})
+	}
+}
+
+func TestContextWithLogger(t *testing.T) {
+	tests := []struct {
+		name   string
+		ctx    context.Context
+		logger *Logger
+	}{
+		{
+			name:   "NoLogger",
+			ctx:    context.Background(),
+			logger: nil,
+		},
+		{
+			name:   "WithLogger",
+			ctx:    context.Background(),
+			logger: NewVoidLogger(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := ContextWithLogger(tc.ctx, tc.logger)
+
+			logger, ok := ctx.Value(loggerContextKey).(*Logger)
+			assert.True(t, ok)
+			assert.Equal(t, tc.logger, logger)
+		})
+	}
+}
+
+func TestLoggerFromContext(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "NoLogger",
+			ctx:  context.Background(),
+		},
+		{
+			name: "WithLogger",
+			ctx:  context.WithValue(context.Background(), loggerContextKey, NewVoidLogger()),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := LoggerFromContext(tc.ctx)
+
+			assert.NotEmpty(t, logger)
 		})
 	}
 }

@@ -29,7 +29,7 @@ func (s *ZoneServer) GetContainingZone(stream zonePB.ZoneManager_GetContainingZo
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xgrpc.LoggerFromContext(stream.Context())
+	logger := log.LoggerFromContext(stream.Context())
 	logger.Info("message", "GetContainingZone handled!")
 
 	for {
@@ -56,7 +56,7 @@ func (s *ZoneServer) GetPlacesInZone(ctx context.Context, zone *zonePB.Zone) (*z
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xgrpc.LoggerFromContext(ctx)
+	logger := log.LoggerFromContext(ctx)
 	logger.Info("message", "GetPlacesInZone handled!")
 
 	return &zonePB.GetPlacesResponse{
@@ -88,7 +88,7 @@ func (s *ZoneServer) GetUsersInZone(zone *zonePB.Zone, stream zonePB.ZoneManager
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xgrpc.LoggerFromContext(stream.Context())
+	logger := log.LoggerFromContext(stream.Context())
 	logger.Info("message", "GetUsersInZone handled!")
 
 	users := []*zonePB.UserInZone{
@@ -130,7 +130,7 @@ func (s *ZoneServer) GetUsersInZones(stream zonePB.ZoneManager_GetUsersInZonesSe
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xgrpc.LoggerFromContext(stream.Context())
+	logger := log.LoggerFromContext(stream.Context())
 	logger.Info("message", "GetUsersInZones handled!")
 
 	users := []*zonePB.UserInZone{

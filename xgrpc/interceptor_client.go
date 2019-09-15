@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	opentracingLog "github.com/opentracing/opentracing-go/log"
@@ -25,24 +25,24 @@ const (
 	clientSummaryMetricName   = "grpc_client_request_duration_quantiles_seconds"
 )
 
-// ClientInterceptor is a gRPC client interceptor for logging, metrics, and tracing
+// ClientInterceptor is a gRPC client interceptor for logging, metrics, and tracing.
 type ClientInterceptor struct {
 	logger  *log.Logger
 	metrics *metrics.RequestMetrics
 	tracer  opentracing.Tracer
 }
 
-// ClientInterceptorOption sets optional parameters for client interceptor
+// ClientInterceptorOption sets optional parameters for client interceptor.
 type ClientInterceptorOption func(*ClientInterceptor)
 
-// ClientLogging is the option for client interceptor to enable logging for every request
+// ClientLogging is the option for client interceptor to enable logging for every request.
 func ClientLogging(logger *log.Logger) ClientInterceptorOption {
 	return func(i *ClientInterceptor) {
 		i.logger = logger
 	}
 }
 
-// ClientMetrics is the option for client interceptor to enable metrics for every request
+// ClientMetrics is the option for client interceptor to enable metrics for every request.
 func ClientMetrics(mf *metrics.Factory) ClientInterceptorOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(clientGaugeMetricName, "gauge metric for number of active client-side grpc requests", []string{"package", "service", "method", "stream"}),
@@ -56,14 +56,14 @@ func ClientMetrics(mf *metrics.Factory) ClientInterceptorOption {
 	}
 }
 
-// ClientTracing is the option for client interceptor to enable tracing for every request
+// ClientTracing is the option for client interceptor to enable tracing for every request.
 func ClientTracing(tracer opentracing.Tracer) ClientInterceptorOption {
 	return func(i *ClientInterceptor) {
 		i.tracer = tracer
 	}
 }
 
-// NewClientInterceptor creates a new instance of gRPC client interceptor
+// NewClientInterceptor creates a new instance of gRPC client interceptor.
 func NewClientInterceptor(opts ...ClientInterceptorOption) *ClientInterceptor {
 	ci := &ClientInterceptor{}
 	for _, opt := range opts {
@@ -121,7 +121,7 @@ func (i *ClientInterceptor) injectRequestID(ctx context.Context, requestID strin
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
-// UnaryInterceptor is the gRPC UnaryClientInterceptor for logging, metrics, and tracing
+// UnaryInterceptor is the gRPC UnaryClientInterceptor for logging, metrics, and tracing.
 func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod string, req, res interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	stream := "false"
 	pkg, service, method, ok := parseMethod(fullMethod)
@@ -130,9 +130,9 @@ func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod str
 	}
 
 	// Get request id from context
-	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	requestID, ok := request.IDFromContext(ctx)
 	if !ok || requestID == "" {
-		requestID = uuid.New().String()
+		requestID = request.NewID()
 	}
 
 	// Propagate the request id
@@ -212,7 +212,7 @@ func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod str
 	return err
 }
 
-// StreamInterceptor is the gRPC StreamClientInterceptor for logging, metrics, and tracing
+// StreamInterceptor is the gRPC StreamClientInterceptor for logging, metrics, and tracing.
 func (i *ClientInterceptor) StreamInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, fullMethod string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 	stream := "true"
 	pkg, service, method, ok := parseMethod(fullMethod)
@@ -221,9 +221,9 @@ func (i *ClientInterceptor) StreamInterceptor(ctx context.Context, desc *grpc.St
 	}
 
 	// Get request id from context
-	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	requestID, ok := request.IDFromContext(ctx)
 	if !ok || requestID == "" {
-		requestID = uuid.New().String()
+		requestID = request.NewID()
 	}
 
 	// Propagate the request id

@@ -11,6 +11,7 @@ import (
 
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	"github.com/moorara/observe/trace"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -55,48 +56,12 @@ func injectRequestID(ctx context.Context, requestID string) context.Context {
 func TestContextForTest(t *testing.T) {
 	ctx := ContextForTest(context.Background())
 
-	requestID, ok := ctx.Value(requestIDContextKey).(string)
+	requestID, ok := request.IDFromContext(ctx)
 	assert.True(t, ok)
 	assert.NotEmpty(t, requestID)
 
-	logger, ok := LoggerFromContext(ctx)
-	assert.True(t, ok)
+	logger := log.LoggerFromContext(ctx)
 	assert.NotNil(t, logger)
-}
-
-func TestLoggerFromContext(t *testing.T) {
-	tests := []struct {
-		name       string
-		ctx        context.Context
-		logger     *log.Logger
-		expectedOK bool
-	}{
-		{
-			name:       "WithoutLogger",
-			ctx:        context.Background(),
-			logger:     nil,
-			expectedOK: false,
-		},
-		{
-			name:       "WithLogger",
-			ctx:        context.Background(),
-			logger:     log.NewVoidLogger(),
-			expectedOK: true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.logger != nil {
-				tc.ctx = context.WithValue(tc.ctx, loggerContextKey, tc.logger)
-			}
-
-			logger, ok := LoggerFromContext(tc.ctx)
-
-			assert.Equal(t, tc.expectedOK, ok)
-			assert.Equal(t, tc.logger, logger)
-		})
-	}
 }
 
 func TestServerInterceptorOptions(t *testing.T) {
@@ -327,7 +292,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 			handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 				time.Sleep(tc.mockDelay)
 				insertedSpan = opentracing.SpanFromContext(ctx)
-				insertedRequestID, _ = ctx.Value(requestIDContextKey).(string)
+				insertedRequestID, _ = request.IDFromContext(ctx)
 				return tc.mockRespRes, tc.mockRespError
 			}
 
@@ -567,7 +532,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 			handler := func(srv interface{}, stream grpc.ServerStream) error {
 				time.Sleep(tc.mockDelay)
 				insertedSpan = opentracing.SpanFromContext(stream.Context())
-				insertedRequestID, _ = stream.Context().Value(requestIDContextKey).(string)
+				insertedRequestID, _ = request.IDFromContext(stream.Context())
 				return tc.mockRespError
 			}
 

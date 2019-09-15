@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	xhttp "github.com/moorara/observe/xhttp"
 	"github.com/moorara/observe/log"
+	xhttp "github.com/moorara/observe/xhttp"
 )
 
 type client struct {
