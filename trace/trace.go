@@ -15,7 +15,7 @@ import (
 	jprometheus "github.com/uber/jaeger-lib/metrics/prometheus"
 )
 
-// jaegerLogger implements jaeger.Logger
+// jaegerLogger implements jaeger.Logger.
 type jaegerLogger struct {
 	logger log.Logger
 }
@@ -28,9 +28,9 @@ func (l *jaegerLogger) Infof(msg string, args ...interface{}) {
 	level.Info(l.logger).Log("message", fmt.Sprintf(msg, args...))
 }
 
-// NewConstSampler creates a constant Jaeger sampler
-//   enabled true will report all traces
-//   enabled false will skip all traces
+// NewConstSampler creates a constant Jaeger sampler.
+//   enabled true will report all traces.
+//   enabled false will skip all traces.
 func NewConstSampler(enabled bool) *jconfig.SamplerConfig {
 	var param float64
 	if enabled {
@@ -43,8 +43,8 @@ func NewConstSampler(enabled bool) *jconfig.SamplerConfig {
 	}
 }
 
-// NewProbabilisticSampler creates a probabilistic Jaeger sampler
-//   probability is between 0 and 1
+// NewProbabilisticSampler creates a probabilistic Jaeger sampler.
+//   probability is between 0 and 1.
 func NewProbabilisticSampler(probability float64) *jconfig.SamplerConfig {
 	return &jconfig.SamplerConfig{
 		Type:  "probabilistic",
@@ -52,8 +52,8 @@ func NewProbabilisticSampler(probability float64) *jconfig.SamplerConfig {
 	}
 }
 
-// NewRateLimitingSampler creates a rate limited Jaeger sampler
-//   rate is the number of spans per second
+// NewRateLimitingSampler creates a rate limited Jaeger sampler.
+//   rate is the number of spans per second.
 func NewRateLimitingSampler(rate float64) *jconfig.SamplerConfig {
 	return &jconfig.SamplerConfig{
 		Type:  "rateLimiting",
@@ -61,10 +61,10 @@ func NewRateLimitingSampler(rate float64) *jconfig.SamplerConfig {
 	}
 }
 
-// NewRemoteSampler creates a Jaeger sampler pulling remote sampling strategies
-//   probability is the initial probability between 0 and 1 before a remote sampling strategy is recieved
-//   serverURL is the address of sampling server
-//   interval specifies the rate of polling remote sampling strategies
+// NewRemoteSampler creates a Jaeger sampler pulling remote sampling strategies.
+//   probability is the initial probability between 0 and 1 before a remote sampling strategy is recieved.
+//   serverURL is the address of sampling server.
+//   interval specifies the rate of polling remote sampling strategies.
 func NewRemoteSampler(probability float64, serverURL string, interval time.Duration) *jconfig.SamplerConfig {
 	return &jconfig.SamplerConfig{
 		Type:                    "remote",
@@ -74,9 +74,9 @@ func NewRemoteSampler(probability float64, serverURL string, interval time.Durat
 	}
 }
 
-// NewAgentReporter creates a Jaeger reporter reporting to jaeger-agent
-//   agentAddr is the address of Jaeger agent
-//   logSpans true will log all spans
+// NewAgentReporter creates a Jaeger reporter reporting to jaeger-agent.
+//   agentAddr is the address of Jaeger agent.
+//   logSpans true will log all spans.
 func NewAgentReporter(agentAddr string, logSpans bool) *jconfig.ReporterConfig {
 	return &jconfig.ReporterConfig{
 		LocalAgentHostPort: agentAddr,
@@ -84,9 +84,9 @@ func NewAgentReporter(agentAddr string, logSpans bool) *jconfig.ReporterConfig {
 	}
 }
 
-// NewCollectorReporter creates a Jaeger reporter reporting to jaeger-collector
-//   collectorAddr is the address of Jaeger collector
-//   logSpans true will log all spans
+// NewCollectorReporter creates a Jaeger reporter reporting to jaeger-collector.
+//   collectorAddr is the address of Jaeger collector.
+//   logSpans true will log all spans.
 func NewCollectorReporter(collectorAddr string, logSpans bool) *jconfig.ReporterConfig {
 	return &jconfig.ReporterConfig{
 		CollectorEndpoint: collectorAddr,
@@ -94,7 +94,7 @@ func NewCollectorReporter(collectorAddr string, logSpans bool) *jconfig.Reporter
 	}
 }
 
-// Options contains optional options for Tracer
+// Options contains optional options for Tracer.
 type Options struct {
 	Name     string
 	Sampler  *jconfig.SamplerConfig
@@ -103,7 +103,7 @@ type Options struct {
 	PromReg  prometheus.Registerer
 }
 
-// NewTracer creates a new tracer
+// NewTracer creates a new tracer.
 func NewTracer(opts Options) (opentracing.Tracer, io.Closer, error) {
 	if opts.Name == "" {
 		opts.Name = "tracer"

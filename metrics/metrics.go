@@ -18,7 +18,7 @@ var (
 )
 
 type (
-	// FactoryOptions contains optional options for creating a Factory
+	// FactoryOptions contains optional options for creating a Factory.
 	FactoryOptions struct {
 		Prefix     string
 		Buckets    []float64
@@ -26,7 +26,7 @@ type (
 		Registerer prometheus.Registerer
 	}
 
-	// Factory is used for creating new metrics with consistent settings
+	// Factory is used for creating new metrics with consistent settings.
 	Factory struct {
 		prefix     string
 		buckets    []float64
@@ -34,13 +34,13 @@ type (
 		registerer prometheus.Registerer
 	}
 
-	// OpMetrics includes metrics for internal operations
+	// OpMetrics includes metrics for internal operations.
 	OpMetrics struct {
 		OpLatencyHist *prometheus.HistogramVec
 		OpLatencySumm *prometheus.SummaryVec
 	}
 
-	// RequestMetrics includes metrics for service requests
+	// RequestMetrics includes metrics for service requests.
 	RequestMetrics struct {
 		ReqCounter      *prometheus.CounterVec
 		ReqGauge        *prometheus.GaugeVec
@@ -49,7 +49,7 @@ type (
 	}
 )
 
-// NewFactory creates a new instance of Factory
+// NewFactory creates a new instance of Factory.
 func NewFactory(opts FactoryOptions) *Factory {
 	if opts.Buckets == nil || len(opts.Buckets) == 0 {
 		opts.Buckets = defaultBuckets
@@ -88,7 +88,7 @@ func (f *Factory) getMetricName(name string) string {
 	return name
 }
 
-// Counter creates a new counter metrics
+// Counter creates a new counter metrics.
 func (f *Factory) Counter(name, description string, labels []string) *prometheus.CounterVec {
 	opts := prometheus.CounterOpts{
 		Name: f.getMetricName(name),
@@ -101,7 +101,7 @@ func (f *Factory) Counter(name, description string, labels []string) *prometheus
 	return counter
 }
 
-// Gauge creates a new gauge metrics
+// Gauge creates a new gauge metrics.
 func (f *Factory) Gauge(name, description string, labels []string) *prometheus.GaugeVec {
 	opts := prometheus.GaugeOpts{
 		Name: f.getMetricName(name),
@@ -114,7 +114,7 @@ func (f *Factory) Gauge(name, description string, labels []string) *prometheus.G
 	return gauge
 }
 
-// Histogram creates a new histogram metrics
+// Histogram creates a new histogram metrics.
 func (f *Factory) Histogram(name, description string, labels []string) *prometheus.HistogramVec {
 	opts := prometheus.HistogramOpts{
 		Name:    f.getMetricName(name),
@@ -128,7 +128,7 @@ func (f *Factory) Histogram(name, description string, labels []string) *promethe
 	return histogram
 }
 
-// Summary creates a new summary metrics
+// Summary creates a new summary metrics.
 func (f *Factory) Summary(name, description string, labels []string) *prometheus.SummaryVec {
 	opts := prometheus.SummaryOpts{
 		Name:       f.getMetricName(name),

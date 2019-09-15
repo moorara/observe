@@ -11,4 +11,4 @@ This package provides utilities for HTTP servers and clients.
 
 ## Quick Start
 
-You can see an example of using the middleware [here](./example).
+You can see an example of using the server and client middleware [here](./example).

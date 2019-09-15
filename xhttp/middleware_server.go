@@ -7,16 +7,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 )
 
 const (
-	loggerContextKey = contextKey("logger")
-
 	serverKind                = "server"
 	serverSpanName            = "http-server-request"
 	serverGaugeMetricName     = "http_server_requests"
@@ -28,17 +26,9 @@ const (
 // ContextForTest takes in a request context and inserts a RequestID as well as a new Void Logger.
 // For use in tests only, to test functions which expect a logger and RequestID to have been added by the middleware.
 func ContextForTest(ctx context.Context) context.Context {
-	ctx = context.WithValue(ctx, requestIDContextKey, uuid.New().String())
-	ctx = context.WithValue(ctx, loggerContextKey, log.NewVoidLogger())
+	ctx = request.ContextWithID(ctx, request.NewID())
+	ctx = log.ContextWithLogger(ctx, log.NewVoidLogger())
 	return ctx
-}
-
-// LoggerFromContext returns a logger set by http middleware on the request context
-func LoggerFromContext(ctx context.Context) (*log.Logger, bool) {
-	val := ctx.Value(loggerContextKey)
-	logger, ok := val.(*log.Logger)
-
-	return logger, ok
 }
 
 // ServerMiddleware is an http server middleware for logging, metrics, tracing, etc.
@@ -48,17 +38,17 @@ type ServerMiddleware struct {
 	tracer  opentracing.Tracer
 }
 
-// ServerMiddlewareOption sets optional parameters for server middleware
+// ServerMiddlewareOption sets optional parameters for server middleware.
 type ServerMiddlewareOption func(*ServerMiddleware)
 
-// ServerLogging is the option for server middleware to enable logging for every request
+// ServerLogging is the option for server middleware to enable logging for every request.
 func ServerLogging(logger *log.Logger) ServerMiddlewareOption {
 	return func(i *ServerMiddleware) {
 		i.logger = logger
 	}
 }
 
-// ServerMetrics is the option for server middleware to enable metrics for every request
+// ServerMetrics is the option for server middleware to enable metrics for every request.
 func ServerMetrics(mf *metrics.Factory) ServerMiddlewareOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(serverGaugeMetricName, "gauge metric for number of active server-side http requests", []string{"method", "url"}),
@@ -72,14 +62,14 @@ func ServerMetrics(mf *metrics.Factory) ServerMiddlewareOption {
 	}
 }
 
-// ServerTracing is the option for server middleware to enable tracing for every request
+// ServerTracing is the option for server middleware to enable tracing for every request.
 func ServerTracing(tracer opentracing.Tracer) ServerMiddlewareOption {
 	return func(i *ServerMiddleware) {
 		i.tracer = tracer
 	}
 }
 
-// NewServerMiddleware creates a new instance of http server middleware
+// NewServerMiddleware creates a new instance of http server middleware.
 func NewServerMiddleware(opts ...ServerMiddlewareOption) *ServerMiddleware {
 	sm := &ServerMiddleware{}
 	for _, opt := range opts {
@@ -89,21 +79,21 @@ func NewServerMiddleware(opts ...ServerMiddlewareOption) *ServerMiddleware {
 	return sm
 }
 
-// RequestID ensures incoming requests have unique ids
-// This middleware ensures the request headers and context have a unique id
-// A new request id will be generated if needed
+// RequestID ensures incoming requests have unique ids.
+// This middleware ensures the request headers and context have a unique id.
+// A new request id will be generated if needed.
 func (m *ServerMiddleware) RequestID(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Ensure request id in headers
 		requestID := r.Header.Get(requestIDHeader)
 		if requestID == "" {
-			requestID = uuid.New().String()
+			requestID = request.NewID()
 			r.Header.Set(requestIDHeader, requestID)
 		}
 
 		// Add request id to context
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, requestIDContextKey, requestID)
+		ctx = request.ContextWithID(ctx, requestID)
 		req := r.WithContext(ctx)
 
 		// Add request id to response headers
@@ -114,8 +104,8 @@ func (m *ServerMiddleware) RequestID(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Logging takes care of logging for incoming http requests
-// Request id will be read from reqeust headers if present
+// Logging takes care of logging for incoming http requests.
+// Request id will be read from reqeust headers if present.
 func (m *ServerMiddleware) Logging(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		proto := r.Proto
@@ -136,7 +126,7 @@ func (m *ServerMiddleware) Logging(next http.HandlerFunc) http.HandlerFunc {
 
 		// Update request context
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, loggerContextKey, logger)
+		ctx = log.ContextWithLogger(ctx, logger)
 		req := r.WithContext(ctx)
 
 		// Call the next http handler
@@ -168,7 +158,7 @@ func (m *ServerMiddleware) Logging(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// Metrics takes care of metrics for incoming http requests
+// Metrics takes care of metrics for incoming http requests.
 func (m *ServerMiddleware) Metrics(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
@@ -208,8 +198,8 @@ func (m *ServerMiddleware) createSpan(r *http.Request) opentracing.Span {
 	return span
 }
 
-// Tracing takes care of tracing for incoming http requests
-// Trace information will be read from reqeust headers if present
+// Tracing takes care of tracing for incoming http requests.
+// Trace information will be read from reqeust headers if present.
 func (m *ServerMiddleware) Tracing(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		proto := r.Proto

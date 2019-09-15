@@ -11,6 +11,7 @@ import (
 
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	"github.com/moorara/observe/trace"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -382,7 +383,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 			}
 
 			if tc.requestID != "" {
-				tc.ctx = context.WithValue(tc.ctx, requestIDContextKey, tc.requestID)
+				tc.ctx = request.ContextWithID(tc.ctx, tc.requestID)
 			}
 
 			invoker := func(ctx context.Context, method string, req, res interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
@@ -659,7 +660,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 			}
 
 			if tc.requestID != "" {
-				tc.ctx = context.WithValue(tc.ctx, requestIDContextKey, tc.requestID)
+				tc.ctx = request.ContextWithID(tc.ctx, tc.requestID)
 			}
 
 			streamer := func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {

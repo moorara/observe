@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	opentracingLog "github.com/opentracing/opentracing-go/log"
@@ -16,22 +16,12 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var loggerContextKey = contextKey("logger")
-
 // ContextForTest takes in a request context and inserts a RequestID as well as a new Void Logger.
 // For use in tests only, to test functions which expect a logger and RequestID to have been added by the interceptor.
 func ContextForTest(ctx context.Context) context.Context {
-	ctx = context.WithValue(ctx, requestIDContextKey, uuid.New().String())
-	ctx = context.WithValue(ctx, loggerContextKey, log.NewVoidLogger())
+	ctx = request.ContextWithID(ctx, request.NewID())
+	ctx = log.ContextWithLogger(ctx, log.NewVoidLogger())
 	return ctx
-}
-
-// LoggerFromContext returns a logger set by grpc server interceptor on each incoming context
-func LoggerFromContext(ctx context.Context) (*log.Logger, bool) {
-	val := ctx.Value(loggerContextKey)
-	logger, ok := val.(*log.Logger)
-
-	return logger, ok
 }
 
 const (
@@ -43,24 +33,24 @@ const (
 	serverSummaryMetricName   = "grpc_server_request_duration_quantiles_seconds"
 )
 
-// ServerInterceptor is a gRPC server interceptor for logging, metrics, and tracing
+// ServerInterceptor is a gRPC server interceptor for logging, metrics, and tracing.
 type ServerInterceptor struct {
 	logger  *log.Logger
 	metrics *metrics.RequestMetrics
 	tracer  opentracing.Tracer
 }
 
-// ServerInterceptorOption sets optional parameters for server interceptor
+// ServerInterceptorOption sets optional parameters for server interceptor.
 type ServerInterceptorOption func(*ServerInterceptor)
 
-// ServerLogging is the option for server interceptor to enable logging for every request
+// ServerLogging is the option for server interceptor to enable logging for every request.
 func ServerLogging(logger *log.Logger) ServerInterceptorOption {
 	return func(i *ServerInterceptor) {
 		i.logger = logger
 	}
 }
 
-// ServerMetrics is the option for server interceptor to enable metrics for every request
+// ServerMetrics is the option for server interceptor to enable metrics for every request.
 func ServerMetrics(mf *metrics.Factory) ServerInterceptorOption {
 	metrics := &metrics.RequestMetrics{
 		ReqGauge:        mf.Gauge(serverGaugeMetricName, "gauge metric for number of active server-side grpc requests", []string{"package", "service", "method", "stream"}),
@@ -74,14 +64,14 @@ func ServerMetrics(mf *metrics.Factory) ServerInterceptorOption {
 	}
 }
 
-// ServerTracing is the option for server interceptor to enable tracing for every request
+// ServerTracing is the option for server interceptor to enable tracing for every request.
 func ServerTracing(tracer opentracing.Tracer) ServerInterceptorOption {
 	return func(i *ServerInterceptor) {
 		i.tracer = tracer
 	}
 }
 
-// NewServerInterceptor creates a new instance of gRPC server interceptor
+// NewServerInterceptor creates a new instance of gRPC server interceptor.
 func NewServerInterceptor(opts ...ServerInterceptorOption) *ServerInterceptor {
 	si := &ServerInterceptor{}
 	for _, opt := range opts {
@@ -102,7 +92,7 @@ func (i *ServerInterceptor) getRequestID(ctx context.Context) string {
 	}
 
 	if requestID == "" {
-		requestID = uuid.New().String()
+		requestID = request.NewID()
 	}
 
 	return requestID
@@ -129,7 +119,7 @@ func (i *ServerInterceptor) createSpan(ctx context.Context) opentracing.Span {
 	return span
 }
 
-// UnaryInterceptor is the gRPC UnaryServerInterceptor for logging, metrics, and tracing
+// UnaryInterceptor is the gRPC UnaryServerInterceptor for logging, metrics, and tracing.
 func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	stream := "false"
 	pkg, service, method, ok := parseMethod(info.FullMethod)
@@ -139,7 +129,7 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 
 	// Get or generate request id
 	requestID := i.getRequestID(ctx)
-	ctx = context.WithValue(ctx, requestIDContextKey, requestID)
+	ctx = request.ContextWithID(ctx, requestID)
 
 	if i.metrics != nil {
 		// Increment guage metric
@@ -158,7 +148,7 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 			"grpc.stream", stream,
 		)
 
-		ctx = context.WithValue(ctx, loggerContextKey, logger)
+		ctx = log.ContextWithLogger(ctx, logger)
 	}
 
 	var span opentracing.Span
@@ -221,7 +211,7 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 	return res, err
 }
 
-// StreamInterceptor is the gRPC StreamServerInterceptor for logging, metrics, and tracing
+// StreamInterceptor is the gRPC StreamServerInterceptor for logging, metrics, and tracing.
 func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	ctx := ss.Context()
 
@@ -233,7 +223,7 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 
 	// Get or generate request id
 	requestID := i.getRequestID(ctx)
-	ctx = context.WithValue(ctx, requestIDContextKey, requestID)
+	ctx = request.ContextWithID(ctx, requestID)
 
 	if i.metrics != nil {
 		// Increment guage metric
@@ -252,7 +242,7 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 			"grpc.stream", stream,
 		)
 
-		ctx = context.WithValue(ctx, loggerContextKey, logger)
+		ctx = log.ContextWithLogger(ctx, logger)
 	}
 
 	var span opentracing.Span

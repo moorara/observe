@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"io"
 	"os"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	kitLevel "github.com/go-kit/kit/log/level"
 )
 
-// Format is the type for output format
+// Format is the type for output format.
 type Format int
 
 const (
@@ -19,7 +20,7 @@ const (
 	Logfmt
 )
 
-// Level is the type for logging level
+// Level is the type for logging level.
 type Level int
 
 const (
@@ -52,7 +53,7 @@ func stringToLevel(level string) Level {
 	}
 }
 
-// Options contains optional options for Logger
+// Options contains optional options for Logger.
 type Options struct {
 	depth       int
 	Name        string
@@ -121,7 +122,7 @@ func createKitLogger(opts Options) kitLog.Logger {
 	return logger
 }
 
-// Logger wraps a go-kit Logger
+// Logger wraps a go-kit Logger.
 type Logger struct {
 	Level  Level
 	Logger *kitLog.SwapLogger
@@ -131,7 +132,7 @@ func (l *Logger) swap(logger kitLog.Logger) {
 	l.Logger.Swap(logger)
 }
 
-// NewLogger creates a new logger
+// NewLogger creates a new logger.
 func NewLogger(opts Options) *Logger {
 	logger := &Logger{
 		Level:  stringToLevel(opts.Level),
@@ -144,7 +145,7 @@ func NewLogger(opts Options) *Logger {
 	return logger
 }
 
-// NewVoidLogger creates a void logger for testing purposes
+// NewVoidLogger creates a void logger for testing purposes.
 func NewVoidLogger() *Logger {
 	logger := &Logger{
 		Logger: new(kitLog.SwapLogger),
@@ -156,7 +157,7 @@ func NewVoidLogger() *Logger {
 	return logger
 }
 
-// With returns a new logger that always logs a set of key-value pairs (context)
+// With returns a new logger that always logs a set of key-value pairs (context).
 func (l *Logger) With(kv ...interface{}) *Logger {
 	logger := &Logger{
 		Level:  l.Level,
@@ -169,61 +170,82 @@ func (l *Logger) With(kv ...interface{}) *Logger {
 	return logger
 }
 
-// SetOptions resets a logger with new options
+// SetOptions resets a logger with new options.
 func (l *Logger) SetOptions(opts Options) {
 	kitLogger := createKitLogger(opts)
 	l.swap(kitLogger)
 }
 
-// Debug logs in debug level
+// Debug logs in debug level.
 func (l *Logger) Debug(kv ...interface{}) error {
 	return kitLevel.Debug(l.Logger).Log(kv...)
 }
 
-// Info logs in debug level
+// Info logs in debug level.
 func (l *Logger) Info(kv ...interface{}) error {
 	return kitLevel.Info(l.Logger).Log(kv...)
 }
 
-// Warn logs in debug level
+// Warn logs in debug level.
 func (l *Logger) Warn(kv ...interface{}) error {
 	return kitLevel.Warn(l.Logger).Log(kv...)
 }
 
-// Error logs in debug level
+// Error logs in debug level.
 func (l *Logger) Error(kv ...interface{}) error {
 	return kitLevel.Error(l.Logger).Log(kv...)
 }
 
-// The singleton logger
+// The singleton logger.
 var singleton = NewLogger(Options{
 	depth: 7,
 	Name:  "singleton",
 })
 
-// SetOptions set optional options for singleton logger
+// SetOptions set optional options for singleton logger.
 func SetOptions(opts Options) {
 	opts.depth = 7
 	singleton.SetOptions(opts)
 	singleton.Level = stringToLevel(opts.Level)
 }
 
-// Debug logs a debug-level event using singleton logger
+// Debug logs a debug-level event using singleton logger.
 func Debug(kv ...interface{}) error {
 	return singleton.Debug(kv...)
 }
 
-// Info logs an info-level event using singleton logger
+// Info logs an info-level event using singleton logger.
 func Info(kv ...interface{}) error {
 	return singleton.Info(kv...)
 }
 
-// Warn logs a warn-level event using singleton logger
+// Warn logs a warn-level event using singleton logger.
 func Warn(kv ...interface{}) error {
 	return singleton.Warn(kv...)
 }
 
-// Error logs an error-level event using singleton logger
+// Error logs an error-level event using singleton logger.
 func Error(kv ...interface{}) error {
 	return singleton.Error(kv...)
+}
+
+// contextKey is the type for the keys added to context.
+type contextKey string
+
+const loggerContextKey = contextKey("logger")
+
+// ContextWithLogger returns a new context that holds a reference to the logger.
+func ContextWithLogger(ctx context.Context, logger *Logger) context.Context {
+	return context.WithValue(ctx, loggerContextKey, logger)
+}
+
+// LoggerFromContext returns a logger set on a context.
+// If no logger found on the context, the singleton logger will be returned.
+func LoggerFromContext(ctx context.Context) *Logger {
+	val := ctx.Value(loggerContextKey)
+	if logger, ok := val.(*Logger); ok {
+		return logger
+	}
+
+	return singleton
 }

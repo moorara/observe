@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	xhttp "github.com/moorara/observe/xhttp"
+	"github.com/moorara/observe/log"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	opentracingLog "github.com/opentracing/opentracing-go/log"
@@ -20,7 +20,7 @@ func (s *server) handler(w http.ResponseWriter, r *http.Request) {
 	d := 5 + rand.Intn(45)
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
-	logger, _ := xhttp.LoggerFromContext(r.Context())
+	logger := log.LoggerFromContext(r.Context())
 	logger.Info("message", "handled the request successfully!")
 
 	// Create a new span

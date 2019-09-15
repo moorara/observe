@@ -13,6 +13,7 @@ import (
 
 	"github.com/moorara/observe/log"
 	"github.com/moorara/observe/metrics"
+	"github.com/moorara/observe/request"
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 	"github.com/prometheus/client_golang/prometheus"
@@ -129,7 +130,7 @@ func TestClientMiddlewareRequestID(t *testing.T) {
 			name:                         "RequestIDInContext",
 			req:                          httptest.NewRequest("GET", "/v1/items", nil),
 			reqHeaders:                   map[string][]string{},
-			reqCtx:                       context.WithValue(context.Background(), requestIDContextKey, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+			reqCtx:                       request.ContextWithID(context.Background(), "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
 			resError:                     nil,
 			resStatusCode:                200,
 			expectedRequestIDFromHeader:  "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
@@ -149,7 +150,7 @@ func TestClientMiddlewareRequestID(t *testing.T) {
 			name:                         "RequestIDInContextAndHeaders",
 			req:                          httptest.NewRequest("GET", "/v1/items", nil),
 			reqHeaders:                   map[string][]string{requestIDHeader: []string{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}},
-			reqCtx:                       context.WithValue(context.Background(), requestIDContextKey, "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+			reqCtx:                       request.ContextWithID(context.Background(), "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
 			resError:                     nil,
 			resStatusCode:                200,
 			expectedRequestIDFromHeader:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -175,7 +176,7 @@ func TestClientMiddlewareRequestID(t *testing.T) {
 			// Test http doer
 			doer := mid.RequestID(func(r *http.Request) (*http.Response, error) {
 				requestIDFromHeader = r.Header.Get(requestIDHeader)
-				requestIDFromContext, _ = r.Context().Value(requestIDContextKey).(string)
+				requestIDFromContext, _ = request.IDFromContext(r.Context())
 				if tc.resError != nil {
 					return nil, tc.resError
 				}
@@ -307,7 +308,7 @@ func TestClientMiddlewareLogging(t *testing.T) {
 
 			if tc.requestID != "" {
 				ctx := tc.req.Context()
-				ctx = context.WithValue(ctx, requestIDContextKey, tc.requestID)
+				ctx = request.ContextWithID(ctx, tc.requestID)
 				tc.req = tc.req.WithContext(ctx)
 			}
 
