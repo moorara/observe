@@ -59,7 +59,7 @@ func TestCreateKitLogger(t *testing.T) {
 			},
 		},
 		{
-			"WithContext",
+			"WithInfo",
 			Options{
 				Name:        "test",
 				Environment: "local",
@@ -109,7 +109,7 @@ func TestCreateKitLogger(t *testing.T) {
 			},
 		},
 		{
-			"CustomWriter",
+			"WithWriter",
 			Options{
 				Writer: &bytes.Buffer{},
 			},
@@ -137,12 +137,81 @@ func TestNewLogger(t *testing.T) {
 			InfoLevel,
 		},
 		{
-			"WithOptions",
+			"WithName",
+			Options{
+				Name: "test",
+			},
+			InfoLevel,
+		},
+		{
+			"WithInfo",
+			Options{
+				Name:        "test",
+				Environment: "local",
+				Region:      "local",
+			},
+			InfoLevel,
+		},
+		{
+			"NoneLevel",
+			Options{
+				Name:  "test",
+				Level: "none",
+			},
+			NoneLevel,
+		},
+		{
+			"ErrorLevel",
+			Options{
+				Name:  "test",
+				Level: "error",
+			},
+			ErrorLevel,
+		},
+		{
+			"WarnLevel",
 			Options{
 				Name:  "test",
 				Level: "warn",
 			},
 			WarnLevel,
+		},
+		{
+			"InfoLevel",
+			Options{
+				Name:  "test",
+				Level: "info",
+			},
+			InfoLevel,
+		},
+		{
+			"DebugLevel",
+			Options{
+				Name:  "test",
+				Level: "debug",
+			},
+			DebugLevel,
+		},
+		{
+			"JSONLogger",
+			Options{
+				Format: JSON,
+			},
+			InfoLevel,
+		},
+		{
+			"LogfmtLogger",
+			Options{
+				Format: Logfmt,
+			},
+			InfoLevel,
+		},
+		{
+			"WithWriter",
+			Options{
+				Writer: &bytes.Buffer{},
+			},
+			InfoLevel,
 		},
 	}
 
@@ -207,7 +276,7 @@ func TestSetOptions(t *testing.T) {
 			},
 		},
 		{
-			"WithContext",
+			"WithInfo",
 			&Logger{
 				Logger: &kitLog.SwapLogger{},
 			},
@@ -281,7 +350,7 @@ func TestSetOptions(t *testing.T) {
 			},
 		},
 		{
-			"CustomWriter",
+			"WithWriter",
 			&Logger{
 				Logger: &kitLog.SwapLogger{},
 			},
@@ -311,16 +380,16 @@ func TestLogger(t *testing.T) {
 			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
-			[]interface{}{"message", "operation failed", "reason", "no capacity"},
+			[]interface{}{"message", "operation failed", "operation", "test"},
 			errors.New("log error"),
-			[]interface{}{"message", "operation failed", "reason", "no capacity"},
+			[]interface{}{"message", "operation failed", "operation", "test"},
 		},
 		{
 			"Success",
 			&mockKitLogger{},
-			[]interface{}{"message", "operation succeeded", "region", "home"},
+			[]interface{}{"message", "operation succeeded", "operation", "test"},
 			nil,
-			[]interface{}{"message", "operation succeeded", "region", "home"},
+			[]interface{}{"message", "operation succeeded", "operation", "test"},
 		},
 	}
 
@@ -330,32 +399,28 @@ func TestLogger(t *testing.T) {
 			logger.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				err := logger.Debug(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				logger.Debug(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				err := logger.Info(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				logger.Info(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				err := logger.Warn(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				logger.Warn(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				err := logger.Error(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				logger.Error(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
@@ -371,65 +436,86 @@ func TestSingletonSetOptions(t *testing.T) {
 		expectedLevel Level
 	}{
 		{
+			"NoOption",
+			Options{},
+			InfoLevel,
+		},
+		{
 			"WithName",
 			Options{
-				Name: "instance",
+				Name: "test",
+			},
+			InfoLevel,
+		},
+		{
+			"WithInfo",
+			Options{
+				Name:        "test",
+				Environment: "local",
+				Region:      "local",
 			},
 			InfoLevel,
 		},
 		{
 			"NoneLevel",
 			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Level:       "none",
+				Name:  "test",
+				Level: "none",
 			},
 			NoneLevel,
 		},
 		{
 			"ErrorLevel",
 			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Level:       "error",
-				Format:      JSON,
+				Name:  "test",
+				Level: "error",
 			},
 			ErrorLevel,
 		},
 		{
 			"WarnLevel",
 			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Level:       "warn",
-				Format:      JSON,
+				Name:  "test",
+				Level: "warn",
 			},
 			WarnLevel,
 		},
 		{
 			"InfoLevel",
 			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Level:       "info",
-				Format:      JSON,
+				Name:  "test",
+				Level: "info",
 			},
 			InfoLevel,
 		},
 		{
 			"DebugLevel",
 			Options{
-				Name:        "instance",
-				Environment: "test",
-				Region:      "local",
-				Level:       "debug",
-				Format:      Logfmt,
+				Name:  "test",
+				Level: "debug",
 			},
 			DebugLevel,
+		},
+		{
+			"JSONLogger",
+			Options{
+				Format: JSON,
+			},
+			InfoLevel,
+		},
+		{
+			"LogfmtLogger",
+			Options{
+				Format: Logfmt,
+			},
+			InfoLevel,
+		},
+		{
+			"WithWriter",
+			Options{
+				Writer: &bytes.Buffer{},
+			},
+			InfoLevel,
 		},
 	}
 
@@ -456,16 +542,16 @@ func TestSingletonLogger(t *testing.T) {
 			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
-			[]interface{}{"message", "operation failed", "reason", "no capacity"},
+			[]interface{}{"message", "operation failed", "operation", "test"},
 			errors.New("log error"),
-			[]interface{}{"message", "operation failed", "reason", "no capacity"},
+			[]interface{}{"message", "operation failed", "operation", "test"},
 		},
 		{
 			"Success",
 			&mockKitLogger{},
-			[]interface{}{"message", "operation succeeded", "region", "home"},
+			[]interface{}{"message", "operation succeeded", "operation", "test"},
 			nil,
-			[]interface{}{"message", "operation succeeded", "region", "home"},
+			[]interface{}{"message", "operation succeeded", "operation", "test"},
 		},
 	}
 
@@ -474,32 +560,28 @@ func TestSingletonLogger(t *testing.T) {
 			singleton.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				err := Debug(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				Debug(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				err := Info(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				Info(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				err := Warn(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				Warn(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				err := Error(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
+				Error(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}

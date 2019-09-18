@@ -10,6 +10,12 @@ import (
 	kitLevel "github.com/go-kit/kit/log/level"
 )
 
+const (
+	withCallerDepth      = 6
+	instanceCallerDepth  = 7
+	singletonCallerDepth = 8
+)
+
 // Format is the type for output format.
 type Format int
 
@@ -55,7 +61,7 @@ func stringToLevel(level string) Level {
 
 // Options contains optional options for Logger.
 type Options struct {
-	depth       int
+	callerDepth int
 	Name        string
 	Environment string
 	Region      string
@@ -65,11 +71,7 @@ type Options struct {
 }
 
 func createKitLogger(opts Options) kitLog.Logger {
-	var logger kitLog.Logger
-
-	if opts.depth == 0 {
-		opts.depth = 6
-	}
+	var kitLogger kitLog.Logger
 
 	if opts.Writer == nil {
 		opts.Writer = os.Stdout
@@ -77,59 +79,59 @@ func createKitLogger(opts Options) kitLog.Logger {
 
 	switch opts.Format {
 	case Logfmt:
-		logger = kitLog.NewLogfmtLogger(opts.Writer)
+		kitLogger = kitLog.NewLogfmtLogger(opts.Writer)
 	case JSON:
 		fallthrough
 	default:
-		logger = kitLog.NewJSONLogger(opts.Writer)
+		kitLogger = kitLog.NewJSONLogger(opts.Writer)
 	}
 
-	// This is not required since SwapLogger can be used concurrently
-	// logger = kitLog.NewSyncLogger(logger)
+	// This is not required since SwapLogger uses a SyncLogger and can be used concurrently
+	// kitLogger = kitLog.NewSyncLogger(kitLogger)
 
-	logger = kitLog.With(logger,
-		"caller", kitLog.Caller(opts.depth),
+	if opts.callerDepth == 0 {
+		opts.callerDepth = instanceCallerDepth
+	}
+
+	kitLogger = kitLog.With(kitLogger,
+		"caller", kitLog.Caller(opts.callerDepth),
 		"timestamp", kitLog.DefaultTimestampUTC,
 	)
 
 	if opts.Name != "" {
-		logger = kitLog.With(logger, "logger", opts.Name)
+		kitLogger = kitLog.With(kitLogger, "logger", opts.Name)
 	}
 
 	if opts.Environment != "" {
-		logger = kitLog.With(logger, "environment", opts.Environment)
+		kitLogger = kitLog.With(kitLogger, "environment", opts.Environment)
 	}
 
 	if opts.Region != "" {
-		logger = kitLog.With(logger, "region", opts.Region)
+		kitLogger = kitLog.With(kitLogger, "region", opts.Region)
 	}
 
 	switch strings.ToLower(opts.Level) {
 	case "none":
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowNone())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowNone())
 	case "error":
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowError())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowError())
 	case "warn":
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowWarn())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowWarn())
 	case "info":
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowInfo())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowInfo())
 	case "debug":
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowDebug())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowDebug())
 	default:
-		logger = kitLevel.NewFilter(logger, kitLevel.AllowInfo())
+		kitLogger = kitLevel.NewFilter(kitLogger, kitLevel.AllowInfo())
 	}
 
-	return logger
+	return kitLogger
 }
 
 // Logger wraps a go-kit Logger.
 type Logger struct {
 	Level  Level
 	Logger *kitLog.SwapLogger
-}
-
-func (l *Logger) swap(logger kitLog.Logger) {
-	l.Logger.Swap(logger)
 }
 
 // NewLogger creates a new logger.
@@ -140,7 +142,7 @@ func NewLogger(opts Options) *Logger {
 	}
 
 	kitLogger := createKitLogger(opts)
-	logger.swap(kitLogger)
+	logger.Logger.Swap(kitLogger)
 
 	return logger
 }
@@ -152,7 +154,7 @@ func NewVoidLogger() *Logger {
 	}
 
 	kitLogger := kitLog.NewNopLogger()
-	logger.swap(kitLogger)
+	logger.Logger.Swap(kitLogger)
 
 	return logger
 }
@@ -165,7 +167,8 @@ func (l *Logger) With(kv ...interface{}) *Logger {
 	}
 
 	kitLogger := kitLog.With(l.Logger, kv...)
-	logger.swap(kitLogger)
+	kitLogger = kitLog.With(kitLogger, "caller", kitLog.Caller(withCallerDepth))
+	logger.Logger.Swap(kitLogger)
 
 	return logger
 }
@@ -173,7 +176,7 @@ func (l *Logger) With(kv ...interface{}) *Logger {
 // SetOptions resets a logger with new options.
 func (l *Logger) SetOptions(opts Options) {
 	kitLogger := createKitLogger(opts)
-	l.swap(kitLogger)
+	l.Logger.Swap(kitLogger)
 }
 
 // Debug logs in debug level.
@@ -198,13 +201,13 @@ func (l *Logger) Error(kv ...interface{}) error {
 
 // The singleton logger.
 var singleton = NewLogger(Options{
-	depth: 7,
-	Name:  "singleton",
+	Name:        "singleton",
+	callerDepth: singletonCallerDepth,
 })
 
 // SetOptions set optional options for singleton logger.
 func SetOptions(opts Options) {
-	opts.depth = 7
+	opts.callerDepth = 8
 	singleton.SetOptions(opts)
 	singleton.Level = stringToLevel(opts.Level)
 }
