@@ -399,28 +399,36 @@ func TestLogger(t *testing.T) {
 			logger.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				logger.Debug(tc.kv...)
+				err := logger.Debug(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				logger.Info(tc.kv...)
+				err := logger.Info(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				logger.Warn(tc.kv...)
+				err := logger.Warn(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				logger.Error(tc.kv...)
+				err := logger.Error(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
@@ -560,28 +568,36 @@ func TestSingletonLogger(t *testing.T) {
 			singleton.Logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				Debug(tc.kv...)
+				err := Debug(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				Info(tc.kv...)
+				err := Info(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				Warn(tc.kv...)
+				err := Warn(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				Error(tc.kv...)
+				err := Error(tc.kv...)
+				assert.Equal(t, tc.expectedError, err)
+
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
