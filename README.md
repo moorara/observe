@@ -46,10 +46,7 @@ Due to their very data-heavy nature, traces in real-world applications need to b
 Insights extracted from traces cannot be aggregated since they are sampled.
 In other words, information captured by one trace does not tell anything about how this trace is compared against other traces and what is the distribution of data.
 
-## report
-
-The package can be used for implementing **error and event reporting** in Go applications.
-It uses [Rollbar](https://rollbar.com) API.
+## event
 
 Events are _irregular time-series_ data and can have an arbitrary number of metadata.
 They occur in temporal order, but the interval between occurrences is inconsistent and sporadic.
