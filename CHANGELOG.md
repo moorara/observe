@@ -1,6 +1,17 @@
 # Change Log
 
-## [v0.2.3](https://github.com/moorara/observe/tree/v0.2.3) (2019-09-14)
+## [v0.3.0](https://github.com/moorara/observe/tree/v0.3.0) (2019-09-18)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.2.3...v0.3.0)
+
+**Merged pull requests:**
+
+- Removing report package [\#34](https://github.com/moorara/observe/pull/34) ([moorara](https://github.com/moorara))
+- log: fix logger depth issue [\#33](https://github.com/moorara/observe/pull/33) ([moorara](https://github.com/moorara))
+- Update module uber/jaeger-client-go to v2.18.1 [\#32](https://github.com/moorara/observe/pull/32) ([renovate[bot]](https://github.com/apps/renovate))
+- Fix typos in README [\#31](https://github.com/moorara/observe/pull/31) ([moorara](https://github.com/moorara))
+- Fix README badge [\#30](https://github.com/moorara/observe/pull/30) ([moorara](https://github.com/moorara))
+
+## [v0.2.3](https://github.com/moorara/observe/tree/v0.2.3) (2019-09-15)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.2.2...v0.2.3)
 
 **Closed issues:**
