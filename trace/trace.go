@@ -5,8 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"github.com/moorara/observe/log"
 	"github.com/prometheus/client_golang/prometheus"
 
 	opentracing "github.com/opentracing/opentracing-go"
@@ -17,15 +16,15 @@ import (
 
 // jaegerLogger implements jaeger.Logger.
 type jaegerLogger struct {
-	logger log.Logger
+	logger *log.Logger
 }
 
 func (l *jaegerLogger) Error(msg string) {
-	level.Error(l.logger).Log("message", msg)
+	_ = l.logger.Error("message", msg)
 }
 
 func (l *jaegerLogger) Infof(msg string, args ...interface{}) {
-	level.Info(l.logger).Log("message", fmt.Sprintf(msg, args...))
+	_ = l.logger.Debug("message", fmt.Sprintf(msg, args...))
 }
 
 // NewConstSampler creates a constant Jaeger sampler.
@@ -99,7 +98,7 @@ type Options struct {
 	Name     string
 	Sampler  *jconfig.SamplerConfig
 	Reporter *jconfig.ReporterConfig
-	Logger   log.Logger
+	Logger   *log.Logger
 	PromReg  prometheus.Registerer
 }
 
