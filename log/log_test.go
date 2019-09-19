@@ -220,7 +220,7 @@ func TestNewLogger(t *testing.T) {
 			logger := NewLogger(tc.opts)
 
 			assert.NotNil(t, logger)
-			assert.NotNil(t, logger.Logger)
+			assert.NotNil(t, logger.kitLogger)
 			assert.Equal(t, logger.Level, tc.expectedLevel)
 		})
 	}
@@ -238,8 +238,8 @@ func TestLoggerWith(t *testing.T) {
 	}{
 		{
 			&Logger{
-				Level:  InfoLevel,
-				Logger: &kitLog.SwapLogger{},
+				Level:     InfoLevel,
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			[]interface{}{"version", "0.1.0", "revision", "1234567", "context", "test"},
 		},
@@ -262,14 +262,14 @@ func TestSetOptions(t *testing.T) {
 		{
 			"NoOption",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{},
 		},
 		{
 			"WithName",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Name: "test",
@@ -278,7 +278,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"WithInfo",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Name:        "test",
@@ -289,7 +289,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"NoneLevel",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "none",
@@ -298,7 +298,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"ErrorLevel",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "error",
@@ -307,7 +307,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"WarnLevel",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "warn",
@@ -316,7 +316,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"InfoLevel",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "info",
@@ -325,7 +325,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"DebugLevel",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "debug",
@@ -334,7 +334,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"JSONLogger",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Format: JSON,
@@ -343,7 +343,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"LogfmtLogger",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Format: Logfmt,
@@ -352,7 +352,7 @@ func TestSetOptions(t *testing.T) {
 		{
 			"WithWriter",
 			&Logger{
-				Logger: &kitLog.SwapLogger{},
+				kitLogger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Writer: &bytes.Buffer{},
@@ -395,8 +395,8 @@ func TestLogger(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger := &Logger{Logger: &kitLog.SwapLogger{}}
-			logger.Logger.Swap(tc.mockKitLogger)
+			logger := &Logger{kitLogger: &kitLog.SwapLogger{}}
+			logger.kitLogger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
 				err := logger.Debug(tc.kv...)
@@ -531,7 +531,7 @@ func TestSingletonSetOptions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			SetOptions(tc.opts)
 
-			assert.NotNil(t, singleton.Logger)
+			assert.NotNil(t, singleton.kitLogger)
 			assert.Equal(t, singleton.Level, tc.expectedLevel)
 		})
 	}
@@ -565,7 +565,7 @@ func TestSingletonLogger(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			singleton.Logger.Swap(tc.mockKitLogger)
+			singleton.kitLogger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
 				err := Debug(tc.kv...)

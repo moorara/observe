@@ -1,12 +1,12 @@
 package trace
 
 import (
+	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/go-kit/kit/log"
+	"github.com/moorara/observe/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber/jaeger-client-go/config"
@@ -30,28 +30,41 @@ func TestJaegerLogger(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		// Logger with pipe to read from
-		rd, wr, _ := os.Pipe()
-		dec := json.NewDecoder(rd)
-		logger := log.NewJSONLogger(wr)
+		t.Run("Error", func(t *testing.T) {
+			buff := new(bytes.Buffer)
+			logger := log.NewLogger(log.Options{
+				Level:  "error",
+				Writer: buff,
+			})
 
-		jlogger := &jaegerLogger{logger}
-		jlogger.Error(tc.errorMsg)
-		jlogger.Infof(tc.infoMsg, tc.infoArgs...)
+			jlogger := &jaegerLogger{logger}
+			jlogger.Error(tc.errorMsg)
 
-		var log map[string]interface{}
+			// Verify Error
+			var log map[string]interface{}
+			err := json.NewDecoder(buff).Decode(&log)
+			assert.NoError(t, err)
+			assert.Equal(t, "error", log["level"])
+			assert.Equal(t, tc.expectedErrorMsg, log["message"])
+		})
 
-		// Verify Error
-		err := dec.Decode(&log)
-		assert.NoError(t, err)
-		assert.Equal(t, "error", log["level"])
-		assert.Equal(t, tc.expectedErrorMsg, log["message"])
+		t.Run("Infof", func(t *testing.T) {
+			buff := new(bytes.Buffer)
+			logger := log.NewLogger(log.Options{
+				Level:  "debug",
+				Writer: buff,
+			})
 
-		// Verify Infof
-		err = dec.Decode(&log)
-		assert.NoError(t, err)
-		assert.Equal(t, "info", log["level"])
-		assert.Equal(t, tc.expectedInfoMsg, log["message"])
+			jlogger := &jaegerLogger{logger}
+			jlogger.Infof(tc.infoMsg, tc.infoArgs...)
+
+			// Verify Infof
+			var log map[string]interface{}
+			err := json.NewDecoder(buff).Decode(&log)
+			assert.NoError(t, err)
+			assert.Equal(t, "debug", log["level"])
+			assert.Equal(t, tc.expectedInfoMsg, log["message"])
+		})
 	}
 }
 
@@ -175,7 +188,7 @@ func TestNewTracer(t *testing.T) {
 				Name:     "service_name",
 				Sampler:  &config.SamplerConfig{},
 				Reporter: &config.ReporterConfig{},
-				Logger:   log.NewNopLogger(),
+				Logger:   log.NewVoidLogger(),
 				PromReg:  prometheus.NewRegistry(),
 			},
 		},

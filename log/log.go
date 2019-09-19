@@ -130,19 +130,19 @@ func createKitLogger(opts Options) kitLog.Logger {
 
 // Logger wraps a go-kit Logger.
 type Logger struct {
-	Level  Level
-	Logger *kitLog.SwapLogger
+	Level     Level
+	kitLogger *kitLog.SwapLogger
 }
 
 // NewLogger creates a new logger.
 func NewLogger(opts Options) *Logger {
 	logger := &Logger{
-		Level:  stringToLevel(opts.Level),
-		Logger: new(kitLog.SwapLogger),
+		Level:     stringToLevel(opts.Level),
+		kitLogger: new(kitLog.SwapLogger),
 	}
 
 	kitLogger := createKitLogger(opts)
-	logger.Logger.Swap(kitLogger)
+	logger.kitLogger.Swap(kitLogger)
 
 	return logger
 }
@@ -150,11 +150,11 @@ func NewLogger(opts Options) *Logger {
 // NewVoidLogger creates a void logger for testing purposes.
 func NewVoidLogger() *Logger {
 	logger := &Logger{
-		Logger: new(kitLog.SwapLogger),
+		kitLogger: new(kitLog.SwapLogger),
 	}
 
 	kitLogger := kitLog.NewNopLogger()
-	logger.Logger.Swap(kitLogger)
+	logger.kitLogger.Swap(kitLogger)
 
 	return logger
 }
@@ -162,13 +162,13 @@ func NewVoidLogger() *Logger {
 // With returns a new logger that always logs a set of key-value pairs (context).
 func (l *Logger) With(kv ...interface{}) *Logger {
 	logger := &Logger{
-		Level:  l.Level,
-		Logger: new(kitLog.SwapLogger),
+		Level:     l.Level,
+		kitLogger: new(kitLog.SwapLogger),
 	}
 
-	kitLogger := kitLog.With(l.Logger, kv...)
+	kitLogger := kitLog.With(l.kitLogger, kv...)
 	kitLogger = kitLog.With(kitLogger, "caller", kitLog.Caller(withCallerDepth))
-	logger.Logger.Swap(kitLogger)
+	logger.kitLogger.Swap(kitLogger)
 
 	return logger
 }
@@ -176,27 +176,27 @@ func (l *Logger) With(kv ...interface{}) *Logger {
 // SetOptions resets a logger with new options.
 func (l *Logger) SetOptions(opts Options) {
 	kitLogger := createKitLogger(opts)
-	l.Logger.Swap(kitLogger)
+	l.kitLogger.Swap(kitLogger)
 }
 
 // Debug logs in debug level.
 func (l *Logger) Debug(kv ...interface{}) error {
-	return kitLevel.Debug(l.Logger).Log(kv...)
+	return kitLevel.Debug(l.kitLogger).Log(kv...)
 }
 
 // Info logs in debug level.
 func (l *Logger) Info(kv ...interface{}) error {
-	return kitLevel.Info(l.Logger).Log(kv...)
+	return kitLevel.Info(l.kitLogger).Log(kv...)
 }
 
 // Warn logs in debug level.
 func (l *Logger) Warn(kv ...interface{}) error {
-	return kitLevel.Warn(l.Logger).Log(kv...)
+	return kitLevel.Warn(l.kitLogger).Log(kv...)
 }
 
 // Error logs in debug level.
 func (l *Logger) Error(kv ...interface{}) error {
-	return kitLevel.Error(l.Logger).Log(kv...)
+	return kitLevel.Error(l.kitLogger).Log(kv...)
 }
 
 // The singleton logger.
