@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.3.1](https://github.com/moorara/observe/tree/v0.3.1) (2019-09-18)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.3.0...v0.3.1)
+
+**Merged pull requests:**
+
+- Remove rollbar module [\#35](https://github.com/moorara/observe/pull/35) ([moorara](https://github.com/moorara))
+
 ## [v0.3.0](https://github.com/moorara/observe/tree/v0.3.0) (2019-09-18)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.2.3...v0.3.0)
 
