@@ -32,18 +32,18 @@ func TestStringToLevel(t *testing.T) {
 		{"Info", "info", InfoLevel},
 		{"Debug", "debug", DebugLevel},
 		{"Default", "trace", InfoLevel},
+		{"Empty", "", InfoLevel},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			level := stringToLevel(tc.level)
-
 			assert.Equal(t, tc.expectedLevel, level)
 		})
 	}
 }
 
-func TestCreateKitLogger(t *testing.T) {
+func TestCreateBaseLogger(t *testing.T) {
 	tests := []struct {
 		name string
 		opts Options
@@ -59,41 +59,11 @@ func TestCreateKitLogger(t *testing.T) {
 			},
 		},
 		{
-			"WithInfo",
+			"WithContext",
 			Options{
 				Name:        "test",
 				Environment: "local",
 				Region:      "local",
-			},
-		},
-		{
-			"NoneLevel",
-			Options{
-				Level: "none",
-			},
-		},
-		{
-			"ErrorLevel",
-			Options{
-				Level: "error",
-			},
-		},
-		{
-			"WarnLevel",
-			Options{
-				Level: "warn",
-			},
-		},
-		{
-			"InfoLevel",
-			Options{
-				Level: "info",
-			},
-		},
-		{
-			"DebugLevel",
-			Options{
-				Level: "debug",
 			},
 		},
 		{
@@ -118,9 +88,54 @@ func TestCreateKitLogger(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			kitLogger := createKitLogger(tc.opts)
+			base := createBaseLogger(tc.opts)
+			assert.NotNil(t, base)
+		})
+	}
+}
 
-			assert.NotNil(t, kitLogger)
+func TestCreateFilteredLogger(t *testing.T) {
+	tests := []struct {
+		name  string
+		base  kitLog.Logger
+		level Level
+	}{
+		{
+			"NoneLevel",
+			kitLog.NewNopLogger(),
+			NoneLevel,
+		},
+		{
+			"ErrorLevel",
+			kitLog.NewNopLogger(),
+			ErrorLevel,
+		},
+		{
+			"WarnLevel",
+			kitLog.NewNopLogger(),
+			WarnLevel,
+		},
+		{
+			"InfoLevel",
+			kitLog.NewNopLogger(),
+			InfoLevel,
+		},
+		{
+			"DebugLevel",
+			kitLog.NewNopLogger(),
+			DebugLevel,
+		},
+		{
+			"InvalidLevel",
+			kitLog.NewNopLogger(),
+			Level(99),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			filtered := createFilteredLogger(tc.base, tc.level)
+			assert.NotNil(t, filtered)
 		})
 	}
 }
@@ -137,14 +152,7 @@ func TestNewLogger(t *testing.T) {
 			InfoLevel,
 		},
 		{
-			"WithName",
-			Options{
-				Name: "test",
-			},
-			InfoLevel,
-		},
-		{
-			"WithInfo",
+			"WithContext",
 			Options{
 				Name:        "test",
 				Environment: "local",
@@ -220,8 +228,9 @@ func TestNewLogger(t *testing.T) {
 			logger := NewLogger(tc.opts)
 
 			assert.NotNil(t, logger)
-			assert.NotNil(t, logger.kitLogger)
-			assert.Equal(t, logger.Level, tc.expectedLevel)
+			assert.NotNil(t, logger.base)
+			assert.NotNil(t, logger.logger)
+			assert.Equal(t, tc.expectedLevel, logger.Level)
 		})
 	}
 }
@@ -238,10 +247,15 @@ func TestLoggerWith(t *testing.T) {
 	}{
 		{
 			&Logger{
-				Level:     InfoLevel,
-				kitLogger: &kitLog.SwapLogger{},
+				Level:  InfoLevel,
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
-			[]interface{}{"version", "0.1.0", "revision", "1234567", "context", "test"},
+			[]interface{}{
+				"version", "0.1.0",
+				"revision", "1234567",
+				"context", "test",
+			},
 		},
 	}
 
@@ -253,116 +267,207 @@ func TestLoggerWith(t *testing.T) {
 	}
 }
 
-func TestSetOptions(t *testing.T) {
+func TestLoggerSetLevel(t *testing.T) {
 	tests := []struct {
-		name   string
-		logger *Logger
-		opts   Options
+		name          string
+		logger        *Logger
+		level         string
+		expectedLevel Level
+	}{
+		{
+			"NoneLevel",
+			&Logger{
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
+			},
+			"none",
+			NoneLevel,
+		},
+		{
+			"ErrorLevel",
+			&Logger{
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
+			},
+			"error",
+			ErrorLevel,
+		},
+		{
+			"WarnLevel",
+			&Logger{
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
+			},
+			"warn",
+			WarnLevel,
+		},
+		{
+			"InfoLevel",
+			&Logger{
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
+			},
+			"info",
+			InfoLevel,
+		},
+		{
+			"DebugLevel",
+			&Logger{
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
+			},
+			"debug",
+			DebugLevel,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.logger.SetLevel(tc.level)
+
+			assert.NotNil(t, tc.logger.logger)
+			assert.Equal(t, tc.expectedLevel, tc.logger.Level)
+		})
+	}
+}
+
+func TestLoggerSetOptions(t *testing.T) {
+	tests := []struct {
+		name          string
+		logger        *Logger
+		opts          Options
+		expectedLevel Level
 	}{
 		{
 			"NoOption",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{},
+			InfoLevel,
 		},
 		{
 			"WithName",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Name: "test",
 			},
+			InfoLevel,
 		},
 		{
-			"WithInfo",
+			"WithContext",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Name:        "test",
 				Environment: "local",
 				Region:      "local",
 			},
+			InfoLevel,
 		},
 		{
 			"NoneLevel",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "none",
 			},
+			NoneLevel,
 		},
 		{
 			"ErrorLevel",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "error",
 			},
+			ErrorLevel,
 		},
 		{
 			"WarnLevel",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "warn",
 			},
+			WarnLevel,
 		},
 		{
 			"InfoLevel",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "info",
 			},
+			InfoLevel,
 		},
 		{
 			"DebugLevel",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Level: "debug",
 			},
+			DebugLevel,
 		},
 		{
 			"JSONLogger",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Format: JSON,
 			},
+			InfoLevel,
 		},
 		{
 			"LogfmtLogger",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Format: Logfmt,
 			},
+			InfoLevel,
 		},
 		{
 			"WithWriter",
 			&Logger{
-				kitLogger: &kitLog.SwapLogger{},
+				base:   kitLog.NewNopLogger(),
+				logger: &kitLog.SwapLogger{},
 			},
 			Options{
 				Writer: &bytes.Buffer{},
 			},
+			InfoLevel,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.logger.SetOptions(tc.opts)
+
+			assert.NotNil(t, tc.logger.base)
+			assert.NotNil(t, tc.logger.logger)
+			assert.Equal(t, tc.expectedLevel, tc.logger.Level)
 		})
 	}
 }
@@ -380,9 +485,9 @@ func TestLogger(t *testing.T) {
 			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
-			[]interface{}{"message", "operation failed", "operation", "test"},
+			[]interface{}{"message", "operation failed", "reason", "no capacity"},
 			errors.New("log error"),
-			[]interface{}{"message", "operation failed", "operation", "test"},
+			[]interface{}{"message", "operation failed", "reason", "no capacity"},
 		},
 		{
 			"Success",
@@ -395,44 +500,79 @@ func TestLogger(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger := &Logger{kitLogger: &kitLog.SwapLogger{}}
-			logger.kitLogger.Swap(tc.mockKitLogger)
+			logger := &Logger{logger: &kitLog.SwapLogger{}}
+			logger.logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				err := logger.Debug(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				logger.Debug(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				err := logger.Info(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				logger.Info(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				err := logger.Warn(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				logger.Warn(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				err := logger.Error(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				logger.Error(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
+		})
+	}
+}
+
+func TestSingletonSetLevel(t *testing.T) {
+	tests := []struct {
+		name          string
+		level         string
+		expectedLevel Level
+	}{
+		{
+			"NoneLevel",
+			"none",
+			NoneLevel,
+		},
+		{
+			"ErrorLevel",
+			"error",
+			ErrorLevel,
+		},
+		{
+			"WarnLevel",
+			"warn",
+			WarnLevel,
+		},
+		{
+			"InfoLevel",
+			"info",
+			InfoLevel,
+		},
+		{
+			"DebugLevel",
+			"debug",
+			DebugLevel,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			SetLevel(tc.level)
+
+			assert.NotNil(t, singleton.logger)
+			assert.Equal(t, tc.expectedLevel, singleton.Level)
 		})
 	}
 }
@@ -456,7 +596,7 @@ func TestSingletonSetOptions(t *testing.T) {
 			InfoLevel,
 		},
 		{
-			"WithInfo",
+			"WithContext",
 			Options{
 				Name:        "test",
 				Environment: "local",
@@ -467,7 +607,6 @@ func TestSingletonSetOptions(t *testing.T) {
 		{
 			"NoneLevel",
 			Options{
-				Name:  "test",
 				Level: "none",
 			},
 			NoneLevel,
@@ -475,7 +614,6 @@ func TestSingletonSetOptions(t *testing.T) {
 		{
 			"ErrorLevel",
 			Options{
-				Name:  "test",
 				Level: "error",
 			},
 			ErrorLevel,
@@ -483,7 +621,6 @@ func TestSingletonSetOptions(t *testing.T) {
 		{
 			"WarnLevel",
 			Options{
-				Name:  "test",
 				Level: "warn",
 			},
 			WarnLevel,
@@ -491,7 +628,6 @@ func TestSingletonSetOptions(t *testing.T) {
 		{
 			"InfoLevel",
 			Options{
-				Name:  "test",
 				Level: "info",
 			},
 			InfoLevel,
@@ -499,7 +635,6 @@ func TestSingletonSetOptions(t *testing.T) {
 		{
 			"DebugLevel",
 			Options{
-				Name:  "test",
 				Level: "debug",
 			},
 			DebugLevel,
@@ -531,8 +666,9 @@ func TestSingletonSetOptions(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			SetOptions(tc.opts)
 
-			assert.NotNil(t, singleton.kitLogger)
-			assert.Equal(t, singleton.Level, tc.expectedLevel)
+			assert.NotNil(t, singleton.base)
+			assert.NotNil(t, singleton.logger)
+			assert.Equal(t, tc.expectedLevel, singleton.Level)
 		})
 	}
 }
@@ -550,9 +686,9 @@ func TestSingletonLogger(t *testing.T) {
 			&mockKitLogger{
 				LogOutError: errors.New("log error"),
 			},
-			[]interface{}{"message", "operation failed", "operation", "test"},
+			[]interface{}{"message", "operation failed", "reason", "no capacity"},
 			errors.New("log error"),
-			[]interface{}{"message", "operation failed", "operation", "test"},
+			[]interface{}{"message", "operation failed", "reason", "no capacity"},
 		},
 		{
 			"Success",
@@ -565,39 +701,31 @@ func TestSingletonLogger(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			singleton.kitLogger.Swap(tc.mockKitLogger)
+			singleton.logger.Swap(tc.mockKitLogger)
 
 			t.Run("DebugLevel", func(t *testing.T) {
-				err := Debug(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				Debug(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("InfoLevel", func(t *testing.T) {
-				err := Info(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				Info(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("WarnLevel", func(t *testing.T) {
-				err := Warn(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				Warn(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
 			t.Run("ErrorLevel", func(t *testing.T) {
-				err := Error(tc.kv...)
-				assert.Equal(t, tc.expectedError, err)
-
+				Error(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}

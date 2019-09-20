@@ -20,11 +20,11 @@ type jaegerLogger struct {
 }
 
 func (l *jaegerLogger) Error(msg string) {
-	_ = l.logger.Error("message", msg)
+	l.logger.Error("message", msg)
 }
 
 func (l *jaegerLogger) Infof(msg string, args ...interface{}) {
-	_ = l.logger.Debug("message", fmt.Sprintf(msg, args...))
+	l.logger.Debug("message", fmt.Sprintf(msg, args...))
 }
 
 // NewConstSampler creates a constant Jaeger sampler.
