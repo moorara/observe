@@ -1,5 +1,12 @@
 # Change Log
 
+## [v0.3.3](https://github.com/moorara/observe/tree/v0.3.3) (2019-09-19)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.3.2...v0.3.3)
+
+**Merged pull requests:**
+
+- log: add SetLevel function [\#37](https://github.com/moorara/observe/pull/37) ([moorara](https://github.com/moorara))
+
 ## [v0.3.2](https://github.com/moorara/observe/tree/v0.3.2) (2019-09-19)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.3.1...v0.3.2)
 
