@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/uber-go/atomic v1.4.0 // indirect
 	github.com/uber/jaeger-client-go v2.18.1+incompatible
-	github.com/uber/jaeger-lib v2.1.1+incompatible
+	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.uber.org/atomic v1.4.0 // indirect
 	google.golang.org/grpc v1.23.1
 )
