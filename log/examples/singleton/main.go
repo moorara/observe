@@ -9,5 +9,5 @@ func main() {
 		Region:      "us-east-1",
 	})
 
-	log.Info("message", "Hello, World!")
+	log.Infof("Hello, World!")
 }

@@ -147,13 +147,13 @@ func (m *ServerMiddleware) Logging(next http.HandlerFunc) http.HandlerFunc {
 		// Logging
 		switch {
 		case statusCode >= 500:
-			logger.Error(pairs...)
+			logger.ErrorKV(pairs...)
 		case statusCode >= 400:
-			logger.Warn(pairs...)
+			logger.WarnKV(pairs...)
 		case statusCode >= 100:
 			fallthrough
 		default:
-			logger.Info(pairs...)
+			logger.InfoKV(pairs...)
 		}
 	}
 }

@@ -41,5 +41,5 @@ func (c *client) call() {
 		panic(err)
 	}
 
-	c.logger.Info("message", string(b))
+	c.logger.InfoKV("message", string(b))
 }

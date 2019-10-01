@@ -30,7 +30,7 @@ func (s *ZoneServer) GetContainingZone(stream zonePB.ZoneManager_GetContainingZo
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
 	logger := log.LoggerFromContext(stream.Context())
-	logger.Info("message", "GetContainingZone handled!")
+	logger.InfoKV("message", "GetContainingZone handled!")
 
 	for {
 		_, err := stream.Recv()
@@ -57,7 +57,7 @@ func (s *ZoneServer) GetPlacesInZone(ctx context.Context, zone *zonePB.Zone) (*z
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
 	logger := log.LoggerFromContext(ctx)
-	logger.Info("message", "GetPlacesInZone handled!")
+	logger.InfoKV("message", "GetPlacesInZone handled!")
 
 	return &zonePB.GetPlacesResponse{
 		Zone: zone,
@@ -89,7 +89,7 @@ func (s *ZoneServer) GetUsersInZone(zone *zonePB.Zone, stream zonePB.ZoneManager
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
 	logger := log.LoggerFromContext(stream.Context())
-	logger.Info("message", "GetUsersInZone handled!")
+	logger.InfoKV("message", "GetUsersInZone handled!")
 
 	users := []*zonePB.UserInZone{
 		{
@@ -131,7 +131,7 @@ func (s *ZoneServer) GetUsersInZones(stream zonePB.ZoneManager_GetUsersInZonesSe
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
 	logger := log.LoggerFromContext(stream.Context())
-	logger.Info("message", "GetUsersInZones handled!")
+	logger.InfoKV("message", "GetUsersInZones handled!")
 
 	users := []*zonePB.UserInZone{
 		{
@@ -204,7 +204,7 @@ func main() {
 	// Start HTTP server for exposing metrics
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		logger.Info("message", "starting http server ...", "port", httpPort)
+		logger.InfoKV("message", "starting http server ...", "port", httpPort)
 		panic(http.ListenAndServe(httpPort, nil))
 	}()
 
@@ -213,6 +213,6 @@ func main() {
 		panic(err)
 	}
 
-	logger.Info("message", "starting grpc server ...", "port", grpcPort)
+	logger.InfoKV("message", "starting grpc server ...", "port", grpcPort)
 	panic(server.Serve(conn))
 }

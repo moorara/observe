@@ -145,13 +145,13 @@ func (m *ClientMiddleware) Logging(next Doer) Doer {
 		// Logging
 		switch {
 		case statusCode >= 500:
-			m.logger.Error(pairs...)
+			m.logger.ErrorKV(pairs...)
 		case statusCode >= 400:
-			m.logger.Warn(pairs...)
+			m.logger.WarnKV(pairs...)
 		case statusCode >= 100:
 			fallthrough
 		default:
-			m.logger.Info(pairs...)
+			m.logger.InfoKV(pairs...)
 		}
 
 		return res, err

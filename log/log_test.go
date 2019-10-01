@@ -472,7 +472,70 @@ func TestLoggerSetOptions(t *testing.T) {
 	}
 }
 
-func TestLogger(t *testing.T) {
+func TestLoggerMessage(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockKitLogger *mockKitLogger
+		format        string
+		vals          []interface{}
+		expectedError error
+		expectedKV    []interface{}
+	}{
+		{
+			"Error",
+			&mockKitLogger{
+				LogOutError: errors.New("log error"),
+			},
+			"operation failed: %s", []interface{}{"no capacity"},
+			errors.New("log error"),
+			[]interface{}{"message", "operation failed: no capacity"},
+		},
+		{
+			"Success",
+			&mockKitLogger{},
+			"operation succeeded: %s", []interface{}{"test"},
+			nil,
+			[]interface{}{"message", "operation succeeded: test"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := &Logger{logger: &kitLog.SwapLogger{}}
+			logger.logger.Swap(tc.mockKitLogger)
+
+			t.Run("Debugf", func(t *testing.T) {
+				logger.Debugf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Infof", func(t *testing.T) {
+				logger.Infof(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Warnf", func(t *testing.T) {
+				logger.Warnf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Errorf", func(t *testing.T) {
+				logger.Errorf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+		})
+	}
+}
+
+func TestLoggerKV(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
@@ -503,29 +566,29 @@ func TestLogger(t *testing.T) {
 			logger := &Logger{logger: &kitLog.SwapLogger{}}
 			logger.logger.Swap(tc.mockKitLogger)
 
-			t.Run("DebugLevel", func(t *testing.T) {
-				logger.Debug(tc.kv...)
+			t.Run("DebugKV", func(t *testing.T) {
+				logger.DebugKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("InfoLevel", func(t *testing.T) {
-				logger.Info(tc.kv...)
+			t.Run("InfoKV", func(t *testing.T) {
+				logger.InfoKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("WarnLevel", func(t *testing.T) {
-				logger.Warn(tc.kv...)
+			t.Run("WarnKV", func(t *testing.T) {
+				logger.WarnKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("ErrorLevel", func(t *testing.T) {
-				logger.Error(tc.kv...)
+			t.Run("ErrorKV", func(t *testing.T) {
+				logger.ErrorKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
@@ -673,7 +736,69 @@ func TestSingletonSetOptions(t *testing.T) {
 	}
 }
 
-func TestSingletonLogger(t *testing.T) {
+func TestSingletonLoggerMessage(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockKitLogger *mockKitLogger
+		format        string
+		vals          []interface{}
+		expectedError error
+		expectedKV    []interface{}
+	}{
+		{
+			"Error",
+			&mockKitLogger{
+				LogOutError: errors.New("log error"),
+			},
+			"operation failed: %s", []interface{}{"no capacity"},
+			errors.New("log error"),
+			[]interface{}{"message", "operation failed: no capacity"},
+		},
+		{
+			"Success",
+			&mockKitLogger{},
+			"operation succeeded: %s", []interface{}{"test"},
+			nil,
+			[]interface{}{"message", "operation succeeded: test"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			singleton.logger.Swap(tc.mockKitLogger)
+
+			t.Run("Debugf", func(t *testing.T) {
+				Debugf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Infof", func(t *testing.T) {
+				Infof(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Warnf", func(t *testing.T) {
+				Warnf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Errorf", func(t *testing.T) {
+				Errorf(tc.format, tc.vals...)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+		})
+	}
+}
+
+func TestSingletonLoggerKV(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
@@ -703,29 +828,29 @@ func TestSingletonLogger(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			singleton.logger.Swap(tc.mockKitLogger)
 
-			t.Run("DebugLevel", func(t *testing.T) {
-				Debug(tc.kv...)
+			t.Run("DebugKV", func(t *testing.T) {
+				DebugKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("InfoLevel", func(t *testing.T) {
-				Info(tc.kv...)
+			t.Run("InfoKV", func(t *testing.T) {
+				InfoKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("WarnLevel", func(t *testing.T) {
-				Warn(tc.kv...)
+			t.Run("WarnKV", func(t *testing.T) {
+				WarnKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}
 			})
 
-			t.Run("ErrorLevel", func(t *testing.T) {
-				Error(tc.kv...)
+			t.Run("ErrorKV", func(t *testing.T) {
+				ErrorKV(tc.kv...)
 				for _, val := range tc.expectedKV {
 					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
 				}

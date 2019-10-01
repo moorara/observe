@@ -39,6 +39,6 @@ func main() {
 
 	http.Handle("/", h)
 	http.Handle("/metrics", promhttp.Handler())
-	logger.Info("message", "starting http server ...", "port", port)
+	logger.InfoKV("message", "starting http server ...", "port", port)
 	panic(http.ListenAndServe(port, nil))
 }
