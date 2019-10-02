@@ -1,7 +1,6 @@
 package trace
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -20,11 +19,11 @@ type jaegerLogger struct {
 }
 
 func (l *jaegerLogger) Error(msg string) {
-	l.logger.ErrorKV("message", msg)
+	l.logger.Error(msg)
 }
 
 func (l *jaegerLogger) Infof(msg string, args ...interface{}) {
-	l.logger.DebugKV("message", fmt.Sprintf(msg, args...))
+	l.logger.Debugf(msg, args...)
 }
 
 // NewConstSampler creates a constant Jaeger sampler.

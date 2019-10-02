@@ -21,7 +21,7 @@ func (s *server) handler(w http.ResponseWriter, r *http.Request) {
 	time.Sleep(time.Duration(d) * time.Millisecond)
 
 	logger := log.LoggerFromContext(r.Context())
-	logger.InfoKV("message", "handled the request successfully!")
+	logger.Info("handled the request successfully!")
 
 	// Create a new span
 	parentSpan := opentracing.SpanFromContext(r.Context())
