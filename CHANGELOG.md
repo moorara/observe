@@ -1,6 +1,16 @@
 # Change Log
 
-## [v0.3.3](https://github.com/moorara/observe/tree/v0.3.3) (2019-09-19)
+## [v0.4.0](https://github.com/moorara/observe/tree/v0.4.0) (2019-10-01)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.3.3...v0.4.0)
+
+**Merged pull requests:**
+
+- log: Change Logging API [\#42](https://github.com/moorara/observe/pull/42) ([moorara](https://github.com/moorara))
+- Update module google.golang.org/grpc to v1.24.0 [\#40](https://github.com/moorara/observe/pull/40) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module uber/jaeger-lib to v2.2.0 [\#39](https://github.com/moorara/observe/pull/39) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module uber/jaeger-client-go to v2.19.0 [\#38](https://github.com/moorara/observe/pull/38) ([renovate[bot]](https://github.com/apps/renovate))
+
+## [v0.3.3](https://github.com/moorara/observe/tree/v0.3.3) (2019-09-20)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.3.2...v0.3.3)
 
 **Merged pull requests:**
