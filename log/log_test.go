@@ -472,7 +472,69 @@ func TestLoggerSetOptions(t *testing.T) {
 	}
 }
 
-func TestLoggerMessage(t *testing.T) {
+func TestLoggerLog(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockKitLogger *mockKitLogger
+		message       string
+		expectedError error
+		expectedKV    []interface{}
+	}{
+		{
+			"Error",
+			&mockKitLogger{
+				LogOutError: errors.New("log error"),
+			},
+			"operation failed",
+			errors.New("log error"),
+			[]interface{}{"message", "operation failed"},
+		},
+		{
+			"Success",
+			&mockKitLogger{},
+			"operation succeeded",
+			nil,
+			[]interface{}{"message", "operation succeeded"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger := &Logger{logger: &kitLog.SwapLogger{}}
+			logger.logger.Swap(tc.mockKitLogger)
+
+			t.Run("Debug", func(t *testing.T) {
+				logger.Debug(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Info", func(t *testing.T) {
+				logger.Info(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Warn", func(t *testing.T) {
+				logger.Warn(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Error", func(t *testing.T) {
+				logger.Error(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+		})
+	}
+}
+
+func TestLoggerLogf(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
@@ -535,7 +597,7 @@ func TestLoggerMessage(t *testing.T) {
 	}
 }
 
-func TestLoggerKV(t *testing.T) {
+func TestLoggerLogKV(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
@@ -736,7 +798,68 @@ func TestSingletonSetOptions(t *testing.T) {
 	}
 }
 
-func TestSingletonLoggerMessage(t *testing.T) {
+func TestSingletonLoggerLog(t *testing.T) {
+	tests := []struct {
+		name          string
+		mockKitLogger *mockKitLogger
+		message       string
+		expectedError error
+		expectedKV    []interface{}
+	}{
+		{
+			"Error",
+			&mockKitLogger{
+				LogOutError: errors.New("log error"),
+			},
+			"operation failed",
+			errors.New("log error"),
+			[]interface{}{"message", "operation failed"},
+		},
+		{
+			"Success",
+			&mockKitLogger{},
+			"operation succeeded",
+			nil,
+			[]interface{}{"message", "operation succeeded"},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			singleton.logger.Swap(tc.mockKitLogger)
+
+			t.Run("Debug", func(t *testing.T) {
+				Debug(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Info", func(t *testing.T) {
+				Info(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Warn", func(t *testing.T) {
+				Warn(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+
+			t.Run("Error", func(t *testing.T) {
+				Error(tc.message)
+				for _, val := range tc.expectedKV {
+					assert.Contains(t, tc.mockKitLogger.LogInKV, val)
+				}
+			})
+		})
+	}
+}
+
+func TestSingletonLoggerLogf(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
@@ -798,7 +921,7 @@ func TestSingletonLoggerMessage(t *testing.T) {
 	}
 }
 
-func TestSingletonLoggerKV(t *testing.T) {
+func TestSingletonLoggerLogKV(t *testing.T) {
 	tests := []struct {
 		name          string
 		mockKitLogger *mockKitLogger
