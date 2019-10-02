@@ -16,7 +16,7 @@ func main() {
 		"revision", "abcdef",
 	)
 
-	logger.Debug(
+	logger.DebugKV(
 		"message", "Hello, World!",
 		"requestId", "2222-bbbb",
 	)

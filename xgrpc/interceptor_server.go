@@ -179,9 +179,9 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 		}
 
 		if success {
-			logger.Info(pairs...)
+			logger.InfoKV(pairs...)
 		} else {
-			logger.Error(pairs...)
+			logger.ErrorKV(pairs...)
 		}
 	}
 
@@ -275,9 +275,9 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 		}
 
 		if success {
-			logger.Info(pairs...)
+			logger.InfoKV(pairs...)
 		} else {
-			logger.Error(pairs...)
+			logger.ErrorKV(pairs...)
 		}
 	}
 

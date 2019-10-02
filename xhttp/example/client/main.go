@@ -30,7 +30,7 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		logger.Info("message", "starting http server ...", "port", port)
+		logger.Infof("starting http server on port %s ...", port)
 		panic(http.ListenAndServe(port, nil))
 	}()
 

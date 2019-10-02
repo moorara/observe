@@ -180,9 +180,9 @@ func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod str
 		pairs = append(pairs, "requestId", requestID)
 
 		if success {
-			i.logger.Info(pairs...)
+			i.logger.InfoKV(pairs...)
 		} else {
-			i.logger.Error(pairs...)
+			i.logger.ErrorKV(pairs...)
 		}
 	}
 
@@ -271,9 +271,9 @@ func (i *ClientInterceptor) StreamInterceptor(ctx context.Context, desc *grpc.St
 		pairs = append(pairs, "requestId", requestID)
 
 		if success {
-			i.logger.Info(pairs...)
+			i.logger.InfoKV(pairs...)
 		} else {
-			i.logger.Error(pairs...)
+			i.logger.ErrorKV(pairs...)
 		}
 	}
 

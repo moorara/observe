@@ -21,7 +21,7 @@ func main() {
     Region:      "us-east-1",
   })
 
-  log.Info("message", "Hello, World!")
+  log.Infof("Hello, %s!", "World")
 }
 ```
 
@@ -52,7 +52,7 @@ func main() {
     "revision", "abcdef",
   )
 
-  logger.Debug(
+  logger.DebugKV(
     "message", "Hello, World!",
     "requestId", "2222-bbbb",
   )

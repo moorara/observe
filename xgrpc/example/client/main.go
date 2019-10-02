@@ -183,7 +183,7 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		logger.Info("message", "starting http server ...", "port", httpPort)
+		logger.Infof("starting http server on port %s ...", httpPort)
 		panic(http.ListenAndServe(httpPort, nil))
 	}()
 
@@ -204,7 +204,7 @@ func main() {
 	defer conn.Close()
 
 	client := zonePB.NewZoneManagerClient(conn)
-	logger.Info("message", "client connected to server", "server", grpcServer)
+	logger.Infof("client connected to server %s", grpcServer)
 
 	for {
 		getContainingZone(client)
