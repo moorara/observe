@@ -40,7 +40,7 @@ func injectSpan(ctx context.Context, tracer opentracing.Tracer, span opentracing
 	return metadata.NewIncomingContext(ctx, md)
 }
 
-func injectRequestID(ctx context.Context, requestID string) context.Context {
+func injectRequestMetadata(ctx context.Context, id, name string) context.Context {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if ok {
 		md = md.Copy()
@@ -48,7 +48,8 @@ func injectRequestID(ctx context.Context, requestID string) context.Context {
 		md = metadata.New(nil)
 	}
 
-	md.Set(requestIDKey, requestID)
+	md.Set(requestIDKey, id)
+	md.Set(clientNameKey, name)
 
 	return metadata.NewIncomingContext(ctx, md)
 }
@@ -161,6 +162,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		name            string
 		parentSpan      opentracing.Span
 		requestID       string
+		clientName      string
 		ctx             context.Context
 		req             interface{}
 		info            *grpc.UnaryServerInfo
@@ -286,7 +288,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 			}
 
 			if tc.requestID != "" {
-				tc.ctx = injectRequestID(tc.ctx, tc.requestID)
+				tc.ctx = injectRequestMetadata(tc.ctx, tc.requestID, tc.clientName)
 			}
 
 			handler := func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -302,7 +304,6 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 			if tc.verify {
 				// Verify request id
-
 				if tc.requestID != "" {
 					assert.Equal(t, tc.requestID, insertedRequestID)
 				} else {
@@ -332,6 +333,8 @@ func TestUnaryServerInterceptor(t *testing.T) {
 				} else {
 					assert.NotEmpty(t, log["requestId"])
 				}
+
+				assert.Equal(t, tc.clientName, log["clientName"])
 
 				// Verify metrics
 
@@ -408,6 +411,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		name            string
 		parentSpan      opentracing.Span
 		requestID       string
+		clientName      string
 		srv             interface{}
 		ss              *mockServerStream
 		info            *grpc.StreamServerInfo
@@ -526,7 +530,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 			}
 
 			if tc.requestID != "" {
-				tc.ss.ContextOutContext = injectRequestID(tc.ss.ContextOutContext, tc.requestID)
+				tc.ss.ContextOutContext = injectRequestMetadata(tc.ss.ContextOutContext, tc.requestID, tc.clientName)
 			}
 
 			handler := func(srv interface{}, stream grpc.ServerStream) error {
@@ -541,7 +545,6 @@ func TestStreamServerInterceptor(t *testing.T) {
 
 			if tc.verify {
 				// Verify request id
-
 				if tc.requestID != "" {
 					assert.Equal(t, tc.requestID, insertedRequestID)
 				} else {
@@ -571,6 +574,8 @@ func TestStreamServerInterceptor(t *testing.T) {
 				} else {
 					assert.NotEmpty(t, log["requestId"])
 				}
+
+				assert.Equal(t, tc.clientName, log["clientName"])
 
 				// Verify metrics
 
