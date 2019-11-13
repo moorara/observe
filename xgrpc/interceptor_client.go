@@ -27,6 +27,7 @@ const (
 
 // ClientInterceptor is a gRPC client interceptor for logging, metrics, and tracing.
 type ClientInterceptor struct {
+	name    string
 	logger  *log.Logger
 	metrics *metrics.RequestMetrics
 	tracer  opentracing.Tracer
@@ -64,8 +65,8 @@ func ClientTracing(tracer opentracing.Tracer) ClientInterceptorOption {
 }
 
 // NewClientInterceptor creates a new instance of gRPC client interceptor.
-func NewClientInterceptor(opts ...ClientInterceptorOption) *ClientInterceptor {
-	ci := &ClientInterceptor{}
+func NewClientInterceptor(name string, opts ...ClientInterceptorOption) *ClientInterceptor {
+	ci := &ClientInterceptor{name: name}
 	for _, opt := range opts {
 		opt(ci)
 	}
@@ -108,7 +109,7 @@ func (i *ClientInterceptor) injectSpan(ctx context.Context, span opentracing.Spa
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
-func (i *ClientInterceptor) injectRequestID(ctx context.Context, requestID string) context.Context {
+func (i *ClientInterceptor) injectRequestMetadata(ctx context.Context, id, name string) context.Context {
 	md, ok := metadata.FromOutgoingContext(ctx)
 	if ok {
 		md = md.Copy()
@@ -116,7 +117,8 @@ func (i *ClientInterceptor) injectRequestID(ctx context.Context, requestID strin
 		md = metadata.New(nil)
 	}
 
-	md.Set(requestIDKey, requestID)
+	md.Set(requestIDKey, id)
+	md.Set(clientNameKey, name)
 
 	return metadata.NewOutgoingContext(ctx, md)
 }
@@ -135,8 +137,8 @@ func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod str
 		requestID = request.NewID()
 	}
 
-	// Propagate the request id
-	ctx = i.injectRequestID(ctx, requestID)
+	// Propagate request metadata
+	ctx = i.injectRequestMetadata(ctx, requestID, i.name)
 
 	if i.metrics != nil {
 		// Increment guage metric
@@ -226,8 +228,8 @@ func (i *ClientInterceptor) StreamInterceptor(ctx context.Context, desc *grpc.St
 		requestID = request.NewID()
 	}
 
-	// Propagate the request id
-	ctx = i.injectRequestID(ctx, requestID)
+	// Propagate request metadata
+	ctx = i.injectRequestMetadata(ctx, requestID, i.name)
 
 	if i.metrics != nil {
 		// Increment guage metric

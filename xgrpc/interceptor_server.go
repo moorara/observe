@@ -81,21 +81,24 @@ func NewServerInterceptor(opts ...ServerInterceptorOption) *ServerInterceptor {
 	return si
 }
 
-func (i *ServerInterceptor) getRequestID(ctx context.Context) string {
-	var requestID string
+func (i *ServerInterceptor) getRequestMetadata(ctx context.Context) (string, string) {
+	var id, name string
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		vals := md.Get(requestIDKey)
-		if len(vals) > 0 {
-			requestID = vals[0]
+		if vals := md.Get(requestIDKey); len(vals) > 0 {
+			id = vals[0]
+		}
+
+		if vals := md.Get(clientNameKey); len(vals) > 0 {
+			name = vals[0]
 		}
 	}
 
-	if requestID == "" {
-		requestID = request.NewID()
+	if id == "" {
+		id = request.NewID()
 	}
 
-	return requestID
+	return id, name
 }
 
 func (i *ServerInterceptor) createSpan(ctx context.Context) opentracing.Span {
@@ -127,8 +130,8 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 		return handler(ctx, req)
 	}
 
-	// Get or generate request id
-	requestID := i.getRequestID(ctx)
+	// Get request metadata
+	requestID, clientName := i.getRequestMetadata(ctx)
 	ctx = request.ContextWithID(ctx, requestID)
 
 	if i.metrics != nil {
@@ -141,6 +144,7 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 		// Create a new logger that logs the context
 		logger = i.logger.With(
 			"requestId", requestID,
+			"clientName", clientName,
 			"grpc.kind", serverKind,
 			"grpc.package", pkg,
 			"grpc.service", service,
@@ -221,8 +225,8 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 		return handler(srv, ss)
 	}
 
-	// Get or generate request id
-	requestID := i.getRequestID(ctx)
+	// Get request metadata
+	requestID, clientName := i.getRequestMetadata(ctx)
 	ctx = request.ContextWithID(ctx, requestID)
 
 	if i.metrics != nil {
@@ -235,6 +239,7 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 		// Create a new logger that logs the context
 		logger = i.logger.With(
 			"requestId", requestID,
+			"clientName", clientName,
 			"grpc.kind", serverKind,
 			"grpc.package", pkg,
 			"grpc.service", service,

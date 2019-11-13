@@ -7,7 +7,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const requestIDKey = "request-id"
+const (
+	requestIDKey  = "request-id"
+	clientNameKey = "client-name"
+)
 
 var methodRegex = regexp.MustCompile(`(/|\.)`)
 

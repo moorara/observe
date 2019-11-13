@@ -36,16 +36,21 @@ func extractSpanContext(ctx context.Context, tracer opentracing.Tracer) opentrac
 	return nil
 }
 
-func extractRequestID(ctx context.Context) string {
+func extractRequestMetadata(ctx context.Context) (string, string) {
+	var id, name string
+
 	md, ok := metadata.FromOutgoingContext(ctx)
 	if ok {
-		vals := md.Get(requestIDKey)
-		if len(vals) > 0 {
-			return vals[0]
+		if vals := md.Get(requestIDKey); len(vals) > 0 {
+			id = vals[0]
+		}
+
+		if vals := md.Get(clientNameKey); len(vals) > 0 {
+			name = vals[0]
 		}
 	}
 
-	return ""
+	return id, name
 }
 
 func TestClientInterceptorOptions(t *testing.T) {
@@ -106,19 +111,22 @@ func TestNewClientInterceptor(t *testing.T) {
 	defer closer.Close()
 
 	tests := []struct {
-		name   string
-		logger *log.Logger
-		mf     *metrics.Factory
-		tracer opentracing.Tracer
+		name       string
+		clientName string
+		logger     *log.Logger
+		mf         *metrics.Factory
+		tracer     opentracing.Tracer
 	}{
 		{
 			"Default",
+			"test-driver",
 			logger,
 			mFac,
 			tracer,
 		},
 		{
 			"WithMocks",
+			"test-driver",
 			log.NewVoidLogger(),
 			metrics.NewFactory(metrics.FactoryOptions{}),
 			mocktracer.New(),
@@ -128,11 +136,13 @@ func TestNewClientInterceptor(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ci := NewClientInterceptor(
+				tc.clientName,
 				ClientLogging(tc.logger),
 				ClientMetrics(tc.mf),
 				ClientTracing(tc.tracer),
 			)
 
+			assert.Equal(t, tc.clientName, ci.name)
 			assert.Equal(t, tc.logger, ci.logger)
 			assert.NotNil(t, ci.metrics)
 			assert.Equal(t, tc.tracer, ci.tracer)
@@ -189,24 +199,27 @@ func TestInjectSpan(t *testing.T) {
 	}
 }
 
-func TestInjectRequestID(t *testing.T) {
+func TestInjectRequestMetadata(t *testing.T) {
 	ctx := context.Background()
 	ctxWithMD := metadata.NewOutgoingContext(ctx, metadata.Pairs("key", "value"))
 
 	tests := []struct {
-		name      string
-		ctx       context.Context
-		requestID string
+		name       string
+		ctx        context.Context
+		requestID  string
+		clientName string
 	}{
 		{
-			name:      "WithoutMetadata",
-			ctx:       ctx,
-			requestID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			name:       "WithoutMetadata",
+			ctx:        ctx,
+			requestID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			clientName: "test-driver",
 		},
 		{
-			name:      "WithMetadata",
-			ctx:       ctxWithMD,
-			requestID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			name:       "WithMetadata",
+			ctx:        ctxWithMD,
+			requestID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			clientName: "test-driver",
 		},
 	}
 
@@ -214,10 +227,11 @@ func TestInjectRequestID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			i := &ClientInterceptor{}
 
-			ctx := i.injectRequestID(tc.ctx, tc.requestID)
+			ctx := i.injectRequestMetadata(tc.ctx, tc.requestID, tc.clientName)
 
-			requestID := extractRequestID(ctx)
+			requestID, clientName := extractRequestMetadata(ctx)
 			assert.Equal(t, tc.requestID, requestID)
+			assert.Equal(t, tc.clientName, clientName)
 		})
 	}
 }
@@ -225,6 +239,7 @@ func TestInjectRequestID(t *testing.T) {
 func TestUnaryClientInterceptor(t *testing.T) {
 	tests := []struct {
 		name            string
+		clientName      string
 		parentSpan      opentracing.Span
 		requestID       string
 		ctx             context.Context
@@ -244,6 +259,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 	}{
 		{
 			name:            "InvalidMethod",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -263,6 +279,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "InvokerFails",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -282,6 +299,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "InvokerSucceeds",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -301,6 +319,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "InvokerSucceedsWithMetadata",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             metadata.NewOutgoingContext(context.Background(), metadata.Pairs("key", "value")),
@@ -320,6 +339,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "InvokerSucceedsWithParentSpan",
+			clientName:      "service-name",
 			parentSpan:      mocktracer.New().StartSpan("parent-span"),
 			requestID:       "",
 			ctx:             context.Background(),
@@ -339,6 +359,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "InvokerSucceedsWithRequestID",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ctx:             context.Background(),
@@ -362,7 +383,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			buff := &bytes.Buffer{}
 			var injectedSpanContext opentracing.SpanContext
-			var injectedRequestID string
+			var injectedRequestID, injectedClientName string
 
 			logger := log.NewLogger(log.Options{Writer: buff})
 			promReg := prometheus.NewRegistry()
@@ -371,6 +392,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 
 			// Create the interceptor
 			i := NewClientInterceptor(
+				tc.clientName,
 				ClientLogging(logger),
 				ClientMetrics(mf),
 				ClientTracing(tracer),
@@ -389,7 +411,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 			invoker := func(ctx context.Context, method string, req, res interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
 				time.Sleep(tc.mockDelay)
 				injectedSpanContext = extractSpanContext(ctx, tracer)
-				injectedRequestID = extractRequestID(ctx)
+				injectedRequestID, injectedClientName = extractRequestMetadata(ctx)
 				return tc.mockRespError
 			}
 
@@ -398,12 +420,14 @@ func TestUnaryClientInterceptor(t *testing.T) {
 
 			if tc.verify {
 				// Verify request id
-
 				if tc.requestID != "" {
 					assert.Equal(t, tc.requestID, injectedRequestID)
 				} else {
 					assert.NotEmpty(t, injectedRequestID)
 				}
+
+				// Verify client name
+				assert.Equal(t, tc.clientName, injectedClientName)
 
 				// Verify logs
 
@@ -502,6 +526,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 func TestStreamClientInterceptor(t *testing.T) {
 	tests := []struct {
 		name            string
+		clientName      string
 		parentSpan      opentracing.Span
 		requestID       string
 		ctx             context.Context
@@ -521,6 +546,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 	}{
 		{
 			name:            "InvalidMethod",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -540,6 +566,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "StreamerFails",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -559,6 +586,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "StreamerSucceeds",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -578,6 +606,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "StreamerSucceedsWithMetadata",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             metadata.NewOutgoingContext(context.Background(), metadata.Pairs("key", "value")),
@@ -597,6 +626,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "StreamerSucceedsWithParentSpan",
+			clientName:      "service-name",
 			parentSpan:      mocktracer.New().StartSpan("parent-span"),
 			requestID:       "",
 			ctx:             context.Background(),
@@ -616,6 +646,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		},
 		{
 			name:            "StreamerSucceedsWithRequestID",
+			clientName:      "service-name",
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -639,7 +670,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			buff := &bytes.Buffer{}
 			var injectedSpanContext opentracing.SpanContext
-			var injectedRequestID string
+			var injectedRequestID, injectedClientName string
 
 			logger := log.NewLogger(log.Options{Writer: buff})
 			promReg := prometheus.NewRegistry()
@@ -648,6 +679,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 
 			// Create the interceptor
 			i := NewClientInterceptor(
+				tc.clientName,
 				ClientLogging(logger),
 				ClientMetrics(mf),
 				ClientTracing(tracer),
@@ -666,7 +698,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 			streamer := func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 				time.Sleep(tc.mockDelay)
 				injectedSpanContext = extractSpanContext(ctx, tracer)
-				injectedRequestID = extractRequestID(ctx)
+				injectedRequestID, injectedClientName = extractRequestMetadata(ctx)
 				return tc.mockRespCS, tc.mockRespError
 			}
 
@@ -676,12 +708,14 @@ func TestStreamClientInterceptor(t *testing.T) {
 
 			if tc.verify {
 				// Verify request id
-
 				if tc.requestID != "" {
 					assert.Equal(t, tc.requestID, injectedRequestID)
 				} else {
 					assert.NotEmpty(t, injectedRequestID)
 				}
+
+				// Verify client name
+				assert.Equal(t, tc.clientName, injectedClientName)
 
 				// Verify logs
 

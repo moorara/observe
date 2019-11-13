@@ -189,6 +189,7 @@ func main() {
 
 	// Create a gRPC interceptor
 	i := xgrpc.NewClientInterceptor(
+		"client",
 		xgrpc.ClientLogging(logger),
 		xgrpc.ClientMetrics(mf),
 		xgrpc.ClientTracing(tracer),
