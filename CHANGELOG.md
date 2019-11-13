@@ -1,6 +1,20 @@
 # Change Log
 
-## [v0.4.0](https://github.com/moorara/observe/tree/v0.4.0) (2019-10-01)
+## [v0.4.1](https://github.com/moorara/observe/tree/v0.4.1) (2019-11-12)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.4.0...v0.4.1)
+
+**Merged pull requests:**
+
+- xgrpc: add client name to server-side logs [\#50](https://github.com/moorara/observe/pull/50) ([moorara](https://github.com/moorara))
+- Update push.yml [\#49](https://github.com/moorara/observe/pull/49) ([moorara](https://github.com/moorara))
+- Update module uber/jaeger-client-go to v2.20.1 [\#48](https://github.com/moorara/observe/pull/48) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module google.golang.org/grpc to v1.25.1 [\#47](https://github.com/moorara/observe/pull/47) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module uber/jaeger-client-go to v2.20.0 [\#46](https://github.com/moorara/observe/pull/46) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module google.golang.org/grpc to v1.25.0 [\#45](https://github.com/moorara/observe/pull/45) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module prometheus/client\_golang to v1.2.1 [\#44](https://github.com/moorara/observe/pull/44) ([renovate[bot]](https://github.com/apps/renovate))
+- Update module prometheus/client\_golang to v1.2.0 [\#43](https://github.com/moorara/observe/pull/43) ([renovate[bot]](https://github.com/apps/renovate))
+
+## [v0.4.0](https://github.com/moorara/observe/tree/v0.4.0) (2019-10-02)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.3.3...v0.4.0)
 
 **Merged pull requests:**
