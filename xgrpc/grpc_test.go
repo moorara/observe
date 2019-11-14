@@ -49,6 +49,54 @@ func TestParseMethod(t *testing.T) {
 	}
 }
 
+func TestFilter(t *testing.T) {
+	tests := []struct {
+		name                 string
+		filter               filter
+		pkg, service, method string
+		expectedMatch        bool
+	}{
+		{
+			"EmptyFilter",
+			filter{"", "", ""},
+			"testPB", "Manager", "Ping",
+			false,
+		},
+		{
+			"MatchPackage",
+			filter{"testPB", "", ""},
+			"testPB", "Manager", "Ping",
+			true,
+		},
+		{
+			"MatchService",
+			filter{"testPB", "Manager", ""},
+			"testPB", "Manager", "Ping",
+			true,
+		},
+		{
+			"MatchMethod",
+			filter{"testPB", "Manager", "Ping"},
+			"testPB", "Manager", "Ping",
+			true,
+		},
+		{
+			"NoMatch",
+			filter{"testPB", "", "Ping"},
+			"testPB", "Manager", "Ping",
+			false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			match := tc.filter.matches(tc.pkg, tc.service, tc.method)
+
+			assert.Equal(t, tc.expectedMatch, match)
+		})
+	}
+}
+
 func TestXServerStream(t *testing.T) {
 	ctx1 := context.WithValue(context.Background(), contextKey("user-id"), "1111")
 	ctx2 := context.WithValue(ctx1, contextKey("trace-id"), "aaaa")
