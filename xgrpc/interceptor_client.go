@@ -28,6 +28,7 @@ const (
 // ClientInterceptor is a gRPC client interceptor for logging, metrics, and tracing.
 type ClientInterceptor struct {
 	name    string
+	filters []filter
 	logger  *log.Logger
 	metrics *metrics.RequestMetrics
 	tracer  opentracing.Tracer
@@ -64,9 +65,28 @@ func ClientTracing(tracer opentracing.Tracer) ClientInterceptorOption {
 	}
 }
 
+// ClientFilter is the option for excluding a package, a service, or a method from being observed.
+// If you only specify the pkg, all methods in all services in that package will be filtered.
+// If you only specify the pkg and the service, all methods in that service in that package will be filtered.
+// If you specify the pkg, the service, and the method, only that method in that service in that package will be filtered.
+// You can use this option multiple times for filtering different packages, services, or methods.
+func ClientFilter(pkg, service, method string) ClientInterceptorOption {
+	return func(i *ClientInterceptor) {
+		i.filters = append(i.filters, filter{
+			pkg:     pkg,
+			service: service,
+			method:  method,
+		})
+	}
+}
+
 // NewClientInterceptor creates a new instance of gRPC client interceptor.
 func NewClientInterceptor(name string, opts ...ClientInterceptorOption) *ClientInterceptor {
-	ci := &ClientInterceptor{name: name}
+	ci := &ClientInterceptor{
+		name:    name,
+		filters: []filter{},
+	}
+
 	for _, opt := range opts {
 		opt(ci)
 	}
@@ -129,6 +149,13 @@ func (i *ClientInterceptor) UnaryInterceptor(ctx context.Context, fullMethod str
 	pkg, service, method, ok := parseMethod(fullMethod)
 	if !ok {
 		return invoker(ctx, method, req, res, cc, opts...)
+	}
+
+	// Apply filters if any
+	for _, f := range i.filters {
+		if f.matches(pkg, service, method) {
+			return invoker(ctx, method, req, res, cc, opts...)
+		}
 	}
 
 	// Get request id from context
@@ -220,6 +247,13 @@ func (i *ClientInterceptor) StreamInterceptor(ctx context.Context, desc *grpc.St
 	pkg, service, method, ok := parseMethod(fullMethod)
 	if !ok {
 		return streamer(ctx, desc, cc, method, opts...)
+	}
+
+	// Apply filters if any
+	for _, f := range i.filters {
+		if f.matches(pkg, service, method) {
+			return streamer(ctx, desc, cc, method, opts...)
+		}
 	}
 
 	// Get request id from context

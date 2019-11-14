@@ -98,6 +98,16 @@ func TestServerInterceptorOptions(t *testing.T) {
 				tracer: tracer,
 			},
 		},
+		{
+			"ServerFilter",
+			ServerInterceptor{},
+			ServerFilter("testPB", "Manager", "Ping"),
+			ServerInterceptor{
+				filters: []filter{
+					{"testPB", "Manager", "Ping"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -123,36 +133,39 @@ func TestNewServerInterceptor(t *testing.T) {
 	defer closer.Close()
 
 	tests := []struct {
-		name   string
-		logger *log.Logger
-		mf     *metrics.Factory
-		tracer opentracing.Tracer
+		name string
+		opts []ServerInterceptorOption
 	}{
 		{
 			"Default",
-			logger,
-			mFac,
-			tracer,
+			[]ServerInterceptorOption{
+				ServerLogging(logger),
+				ServerMetrics(mFac),
+				ServerTracing(tracer),
+			},
 		},
 		{
 			"WithMocks",
-			log.NewVoidLogger(),
-			metrics.NewFactory(metrics.FactoryOptions{}),
-			mocktracer.New(),
+			[]ServerInterceptorOption{
+				ServerLogging(log.NewVoidLogger()),
+				ServerMetrics(metrics.NewFactory(metrics.FactoryOptions{})),
+				ServerTracing(mocktracer.New()),
+			},
+		},
+		{
+			"WithFilters",
+			[]ServerInterceptorOption{
+				ServerFilter("teamPB", "Manager", "Ping"),
+				ServerFilter("groupPB", "Manager", "Ping"),
+			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			si := NewServerInterceptor(
-				ServerLogging(tc.logger),
-				ServerMetrics(tc.mf),
-				ServerTracing(tc.tracer),
-			)
+			si := NewServerInterceptor(tc.opts...)
 
-			assert.Equal(t, tc.logger, si.logger)
-			assert.NotNil(t, si.metrics)
-			assert.Equal(t, tc.tracer, si.tracer)
+			assert.NotNil(t, si)
 		})
 	}
 }
@@ -160,6 +173,7 @@ func TestNewServerInterceptor(t *testing.T) {
 func TestUnaryServerInterceptor(t *testing.T) {
 	tests := []struct {
 		name            string
+		filters         []filter
 		parentSpan      opentracing.Span
 		requestID       string
 		clientName      string
@@ -178,6 +192,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	}{
 		{
 			name:            "InvalidMethod",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -194,7 +209,59 @@ func TestUnaryServerInterceptor(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			name:            "PackageFilterMatches",
+			filters:         []filter{{"package", "", ""}},
+			parentSpan:      nil,
+			ctx:             context.Background(),
+			req:             nil,
+			info:            &grpc.UnaryServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			mockRespRes:     nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
+			name:            "ServiceFilterMatches",
+			filters:         []filter{{"package", "service", ""}},
+			parentSpan:      nil,
+			ctx:             context.Background(),
+			req:             nil,
+			info:            &grpc.UnaryServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			mockRespRes:     nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
+			name:            "MethodFilterMatches",
+			filters:         []filter{{"package", "service", "method"}},
+			parentSpan:      nil,
+			ctx:             context.Background(),
+			req:             nil,
+			info:            &grpc.UnaryServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			mockRespRes:     nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
 			name:            "HandlerFails",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -212,6 +279,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceeds",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			ctx:             context.Background(),
@@ -229,6 +297,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceedsWithParentSpan",
+			filters:         nil,
 			parentSpan:      mocktracer.New().StartSpan("parent-span"),
 			requestID:       "",
 			ctx:             context.Background(),
@@ -246,6 +315,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceedsWithRequestID",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ctx:             context.Background(),
@@ -274,13 +344,19 @@ func TestUnaryServerInterceptor(t *testing.T) {
 			mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: promReg})
 			tracer := mocktracer.New()
 
-			// Create the interceptor
-			i := NewServerInterceptor(
+			opts := []ServerInterceptorOption{
 				ServerLogging(logger),
 				ServerMetrics(mf),
 				ServerTracing(tracer),
-			)
+			}
 
+			// Apply filters if any
+			for _, f := range tc.filters {
+				opts = append(opts, ServerFilter(f.pkg, f.service, f.method))
+			}
+
+			// Create the interceptor
+			i := NewServerInterceptor(opts...)
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {
@@ -409,6 +485,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 func TestStreamServerInterceptor(t *testing.T) {
 	tests := []struct {
 		name            string
+		filters         []filter
 		parentSpan      opentracing.Span
 		requestID       string
 		clientName      string
@@ -426,6 +503,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 	}{
 		{
 			name:            "InvalidMethod",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			srv:             nil,
@@ -441,7 +519,56 @@ func TestStreamServerInterceptor(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			name:            "PackageFilterMatches",
+			filters:         []filter{{"package", "", ""}},
+			parentSpan:      nil,
+			srv:             nil,
+			ss:              &mockServerStream{ContextOutContext: context.Background()},
+			info:            &grpc.StreamServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
+			name:            "ServiceFilterMatches",
+			filters:         []filter{{"package", "service", ""}},
+			parentSpan:      nil,
+			srv:             nil,
+			ss:              &mockServerStream{ContextOutContext: context.Background()},
+			info:            &grpc.StreamServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
+			name:            "MethodFilterMatches",
+			filters:         []filter{{"package", "service", "method"}},
+			parentSpan:      nil,
+			srv:             nil,
+			ss:              &mockServerStream{ContextOutContext: context.Background()},
+			info:            &grpc.StreamServerInfo{FullMethod: "/package.service/method"},
+			mockDelay:       0,
+			mockRespError:   nil,
+			verify:          false,
+			expectedPackage: "",
+			expectedService: "",
+			expectedMethod:  "",
+			expectedStream:  "",
+			expectedSuccess: false,
+		},
+		{
 			name:            "HandlerFails",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			srv:             nil,
@@ -458,6 +585,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceeds",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "",
 			srv:             nil,
@@ -474,6 +602,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceedsWithParentSpan",
+			filters:         nil,
 			parentSpan:      mocktracer.New().StartSpan("parent-span"),
 			srv:             nil,
 			ss:              &mockServerStream{ContextOutContext: context.Background()},
@@ -489,6 +618,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		},
 		{
 			name:            "HandlerSucceedsWithRequestID",
+			filters:         nil,
 			parentSpan:      nil,
 			requestID:       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			srv:             nil,
@@ -516,13 +646,19 @@ func TestStreamServerInterceptor(t *testing.T) {
 			mf := metrics.NewFactory(metrics.FactoryOptions{Registerer: promReg})
 			tracer := mocktracer.New()
 
-			// Create the interceptor
-			i := NewServerInterceptor(
+			opts := []ServerInterceptorOption{
 				ServerLogging(logger),
 				ServerMetrics(mf),
 				ServerTracing(tracer),
-			)
+			}
 
+			// Apply filters if any
+			for _, f := range tc.filters {
+				opts = append(opts, ServerFilter(f.pkg, f.service, f.method))
+			}
+
+			// Create the interceptor
+			i := NewServerInterceptor(opts...)
 			assert.NotNil(t, i)
 
 			if tc.parentSpan != nil {

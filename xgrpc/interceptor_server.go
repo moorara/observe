@@ -35,6 +35,7 @@ const (
 
 // ServerInterceptor is a gRPC server interceptor for logging, metrics, and tracing.
 type ServerInterceptor struct {
+	filters []filter
 	logger  *log.Logger
 	metrics *metrics.RequestMetrics
 	tracer  opentracing.Tracer
@@ -71,9 +72,27 @@ func ServerTracing(tracer opentracing.Tracer) ServerInterceptorOption {
 	}
 }
 
+// ServerFilter is the option for excluding a package, a service, or a method from being observed.
+// If you only specify the pkg, all methods in all services in that package will be filtered.
+// If you only specify the pkg and the service, all methods in that service in that package will be filtered.
+// If you specify the pkg, the service, and the method, only that method in that service in that package will be filtered.
+// You can use this option multiple times for filtering different packages, services, or methods.
+func ServerFilter(pkg, service, method string) ServerInterceptorOption {
+	return func(i *ServerInterceptor) {
+		i.filters = append(i.filters, filter{
+			pkg:     pkg,
+			service: service,
+			method:  method,
+		})
+	}
+}
+
 // NewServerInterceptor creates a new instance of gRPC server interceptor.
 func NewServerInterceptor(opts ...ServerInterceptorOption) *ServerInterceptor {
-	si := &ServerInterceptor{}
+	si := &ServerInterceptor{
+		filters: []filter{},
+	}
+
 	for _, opt := range opts {
 		opt(si)
 	}
@@ -128,6 +147,13 @@ func (i *ServerInterceptor) UnaryInterceptor(ctx context.Context, req interface{
 	pkg, service, method, ok := parseMethod(info.FullMethod)
 	if !ok {
 		return handler(ctx, req)
+	}
+
+	// Apply filters if any
+	for _, f := range i.filters {
+		if f.matches(pkg, service, method) {
+			return handler(ctx, req)
+		}
 	}
 
 	// Get request metadata
@@ -223,6 +249,13 @@ func (i *ServerInterceptor) StreamInterceptor(srv interface{}, ss grpc.ServerStr
 	pkg, service, method, ok := parseMethod(info.FullMethod)
 	if !ok {
 		return handler(srv, ss)
+	}
+
+	// Apply filters if any
+	for _, f := range i.filters {
+		if f.matches(pkg, service, method) {
+			return handler(srv, ss)
+		}
 	}
 
 	// Get request metadata

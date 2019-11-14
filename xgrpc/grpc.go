@@ -24,6 +24,19 @@ func parseMethod(fullMethod string) (string, string, string, bool) {
 	return subs[1], subs[2], subs[3], true
 }
 
+// filter can be used for filtering a package, a service, or a method from being observed.
+type filter struct {
+	pkg     string
+	service string
+	method  string
+}
+
+func (f *filter) matches(pkg, service, method string) bool {
+	return (f.pkg == pkg && f.service == "" && f.method == "") ||
+		(f.pkg == pkg && f.service == service && f.method == "") ||
+		(f.pkg == pkg && f.service == service && f.method == method)
+}
+
 type xServerStream struct {
 	grpc.ServerStream
 	context context.Context
