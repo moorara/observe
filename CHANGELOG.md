@@ -1,6 +1,13 @@
 # Change Log
 
-## [v0.4.1](https://github.com/moorara/observe/tree/v0.4.1) (2019-11-12)
+## [v0.4.2](https://github.com/moorara/observe/tree/v0.4.2) (2019-11-14)
+[Full Changelog](https://github.com/moorara/observe/compare/v0.4.1...v0.4.2)
+
+**Merged pull requests:**
+
+- xgrpc: add ClientFilter and ServerFilter options [\#51](https://github.com/moorara/observe/pull/51) ([moorara](https://github.com/moorara))
+
+## [v0.4.1](https://github.com/moorara/observe/tree/v0.4.1) (2019-11-13)
 [Full Changelog](https://github.com/moorara/observe/compare/v0.4.0...v0.4.1)
 
 **Merged pull requests:**
