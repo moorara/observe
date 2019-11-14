@@ -76,6 +76,7 @@ func ServerTracing(tracer opentracing.Tracer) ServerInterceptorOption {
 // If you only specify the pkg, all methods in all services in that package will be filtered.
 // If you only specify the pkg and the service, all methods in that service in that package will be filtered.
 // If you specify the pkg, the service, and the method, only that method in that service in that package will be filtered.
+// You can use this option multiple times for filtering different packages, services, or methods.
 func ServerFilter(pkg, service, method string) ServerInterceptorOption {
 	return func(i *ServerInterceptor) {
 		i.filters = append(i.filters, filter{
