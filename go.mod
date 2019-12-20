@@ -8,8 +8,8 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/opentracing/opentracing-go v1.1.0
-	github.com/prometheus/client_golang v1.2.1
-	github.com/prometheus/client_model v0.0.0-20191202183732-d1d2010b5bee
+	github.com/prometheus/client_golang v1.3.0
+	github.com/prometheus/client_model v0.1.0
 	github.com/stretchr/testify v1.4.0
 	github.com/uber/jaeger-client-go v2.20.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible
