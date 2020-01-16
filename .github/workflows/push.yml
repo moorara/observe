@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
+        with:
+          fetch-depth: 2
       - name: Test
         id: test
         uses: moorara/actions/go-cover@master
