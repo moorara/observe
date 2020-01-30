@@ -14,5 +14,5 @@ require (
 	github.com/uber/jaeger-client-go v2.22.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	go.uber.org/atomic v1.5.0 // indirect
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.27.0
 )
