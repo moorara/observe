@@ -53,7 +53,7 @@ They occur in temporal order, but the interval between occurrences is inconsiste
 Events are used for reporting and alerting on important or critical events such as errors, crashes, etc.
 
 
-[godoc-url]: https://godoc.org/github.com/moorara/observe
+[godoc-url]: https://pkg.go.dev/github.com/moorara/observe
 [godoc-image]: https://godoc.org/github.com/moorara/observe?status.svg
 [workflow-url]: https://github.com/moorara/observe/actions
 [workflow-image]: https://github.com/moorara/observe/workflows/Main/badge.svg
