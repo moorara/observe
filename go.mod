@@ -1,6 +1,6 @@
 module github.com/moorara/observe
 
-go 1.13
+go 1.14
 
 require (
 	github.com/go-kit/kit v0.10.0
