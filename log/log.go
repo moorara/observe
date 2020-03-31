@@ -1,3 +1,5 @@
+// Package log can be used for structured logging.
+// It supports a singleton (global) logger as well as instantiating new loggers.
 package log
 
 import (
