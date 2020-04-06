@@ -12,5 +12,5 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/uber/jaeger-client-go v2.22.1+incompatible
 	github.com/uber/jaeger-lib v2.2.0+incompatible
-	google.golang.org/grpc v1.28.0
+	google.golang.org/grpc v1.28.1
 )
