@@ -1,22 +1,13 @@
-package request
+package observe
 
 import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewID(t *testing.T) {
-	requestID := NewID()
-
-	u, err := uuid.Parse(requestID)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, u)
-}
-
-func TestContextWithID(t *testing.T) {
+func TestContextWithUUID(t *testing.T) {
 	tests := []struct {
 		name      string
 		ctx       context.Context
@@ -31,14 +22,14 @@ func TestContextWithID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := ContextWithID(tc.ctx, tc.requestID)
+			ctx := ContextWithUUID(tc.ctx, tc.requestID)
 
-			assert.Equal(t, tc.requestID, ctx.Value(requestIDContextKey))
+			assert.Equal(t, tc.requestID, ctx.Value(uuidContextKey))
 		})
 	}
 }
 
-func TestIDFromContext(t *testing.T) {
+func TestUUIDFromContext(t *testing.T) {
 	tests := []struct {
 		name              string
 		ctx               context.Context
@@ -53,7 +44,7 @@ func TestIDFromContext(t *testing.T) {
 		},
 		{
 			"WithRequestID",
-			context.WithValue(context.Background(), requestIDContextKey, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+			context.WithValue(context.Background(), uuidContextKey, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 			true,
 			"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 		},
@@ -61,7 +52,7 @@ func TestIDFromContext(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			requestID, ok := IDFromContext(tc.ctx)
+			requestID, ok := UUIDFromContext(tc.ctx)
 
 			assert.Equal(t, tc.expectedOK, ok)
 			assert.Equal(t, tc.expectedRequestID, requestID)
