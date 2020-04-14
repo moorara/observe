@@ -1,5 +1,5 @@
-// Package observe is used for implementing three pillars of observability using OpenTelemetry API.
-// It provides structured logging, metrics, and tracing in one package.
+// Package observe can be used for implementing observability using OpenTelemetry API.
+// It aims to unify three pillars of observability in one single package that is easy-to-use and hard-to-misuse.
 //
 // Logging:
 //
