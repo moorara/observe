@@ -25,7 +25,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "WithMetadata",
 			opts: LoggerOptions{
-				Name:        "test",
+				Name:        "my-service",
 				Environment: "local",
 				Region:      "local",
 			},
@@ -35,7 +35,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "LevelDebug",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "debug",
 			},
 			expectedLevel:    zapcore.DebugLevel,
@@ -44,7 +44,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "LevelInfo",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "info",
 			},
 			expectedLevel:    zapcore.InfoLevel,
@@ -53,7 +53,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "LevelWarn",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "warn",
 			},
 			expectedLevel:    zapcore.WarnLevel,
@@ -62,7 +62,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "LevelError",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "error",
 			},
 			expectedLevel:    zapcore.ErrorLevel,
@@ -71,7 +71,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "LevelNone",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "none",
 			},
 			expectedLevel:    zapcore.Level(99),
@@ -80,7 +80,7 @@ func TestNewZapLogger(t *testing.T) {
 		{
 			name: "InvalidLevel",
 			opts: LoggerOptions{
-				Name:  "test",
+				Name:  "my-service",
 				Level: "invalid",
 			},
 			expectedLevel:    zapcore.Level(99),
