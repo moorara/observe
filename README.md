@@ -1,11 +1,12 @@
+**This package is now archived in favor of the new
+[observer](https://github.com/moorara/observer) package that embraces the [OpenTelemetry](https://opentelemetry.io) API.**
+
+
 [![Go Doc][godoc-image]][godoc-url]
 [![Build Status][workflow-image]][workflow-url]
 [![Go Report Card][goreport-image]][goreport-url]
 [![Test Coverage][coverage-image]][coverage-url]
 [![Maintainability][maintainability-image]][maintainability-url]
-
-**This package is now archived in favor of the new
-[observer](https://github.com/moorara/observer) package that embraces the [OpenTelemetry](https://opentelemetry.io) API.**
 
 # observe
 
